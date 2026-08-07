@@ -85,10 +85,10 @@ export const HeroCarousel: React.FC = () => {
     setCurrentIndex((prev) => (prev - 1 + SLIDES.length) % SLIDES.length);
   }, []);
 
-  // Autoplay timer 6s (Disabled if user prefers reduced motion)
+  // Autoplay timer 5s (Disabled if user prefers reduced motion)
   useEffect(() => {
     if (isPaused || shouldReduceMotion) return;
-    const interval = setInterval(nextSlide, 6000);
+    const interval = setInterval(nextSlide, 5000);
     return () => clearInterval(interval);
   }, [isPaused, shouldReduceMotion, nextSlide]);
 
@@ -118,7 +118,7 @@ export const HeroCarousel: React.FC = () => {
   return (
     <section
       aria-label="Hero Carousel"
-      className="relative w-full overflow-hidden bg-slate-950 py-16 md:py-24"
+      className="relative w-full overflow-hidden bg-[#EBF3FF] dark:bg-slate-950 py-12 md:py-16 transition-colors duration-200"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
       onFocus={() => setIsPaused(true)}
@@ -126,6 +126,10 @@ export const HeroCarousel: React.FC = () => {
       onKeyDown={handleKeyDown}
       tabIndex={0}
     >
+      {/* Decorative ambient background glows using matching soft blue/indigo tones */}
+      <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#DCE7FE]/60 dark:bg-purple-600/15 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-[#D4E3FF]/50 dark:bg-blue-600/15 rounded-full blur-3xl pointer-events-none" />
+
       {/* Live Region for Screen Readers */}
       <div className="sr-only" aria-live="polite">
         Slide {currentIndex + 1} of {SLIDES.length}: {currentSlide.title}
@@ -133,7 +137,7 @@ export const HeroCarousel: React.FC = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Bounded Hero Card Container */}
-        <div className="relative w-full overflow-hidden rounded-2xl min-h-[500px] md:min-h-[560px] flex items-center px-6 sm:px-12 py-10 shadow-2xl border border-white/10">
+        <div className="relative w-full overflow-hidden rounded-3xl min-h-[500px] md:min-h-[560px] flex items-center px-6 sm:px-12 py-10 shadow-xl border border-[#DCE7FE] dark:border-purple-500/20 bg-white dark:bg-slate-900">
           {/* Background Image Carousel with Framer Motion Fade */}
           <AnimatePresence mode="wait">
             <motion.div
@@ -146,8 +150,8 @@ export const HeroCarousel: React.FC = () => {
               onTouchStart={handleTouchStart}
               onTouchEnd={handleTouchEnd}
             >
-              {/* Dark gradient overlay fully occupying 100% of the image card for text legibility with zero gap */}
-              <div className="absolute inset-0 bg-gradient-to-r from-slate-950/85 via-slate-950/50 to-slate-950/25 z-10" />
+              {/* Light/Dark gradient overlay: solid white behind left text, 100% clear on right image */}
+              <div className="absolute inset-0 bg-gradient-to-r from-white via-white/85 via-45% to-transparent dark:from-slate-950 dark:via-slate-950/85 dark:via-45% dark:to-transparent z-10" />
 
               <Image
                 src={currentSlide.image}
@@ -163,7 +167,7 @@ export const HeroCarousel: React.FC = () => {
           </AnimatePresence>
 
           {/* Slide Content Overlay */}
-          <div className="relative z-20 max-w-2xl text-white">
+          <div className="relative z-20 max-w-2xl text-slate-900 dark:text-white">
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentSlide.id}
@@ -174,18 +178,18 @@ export const HeroCarousel: React.FC = () => {
                 className="space-y-6"
               >
                 {/* Pill Badge */}
-                <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-slate-950/80 backdrop-blur-md text-purple-200 text-xs font-bold tracking-wide border border-purple-500/40 shadow-lg shadow-purple-500/10">
-                  <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse shrink-0" aria-hidden="true" />
+                <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-purple-100/90 dark:bg-slate-950/80 backdrop-blur-md text-purple-700 dark:text-purple-200 text-xs font-bold tracking-wide border border-purple-200 dark:border-purple-500/40 shadow-sm">
+                  <span className="w-2 h-2 rounded-full bg-purple-600 dark:bg-purple-400 animate-pulse shrink-0" aria-hidden="true" />
                   <span>{currentSlide.badge}</span>
                 </div>
 
                 {/* Title */}
-                <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-tight font-manrope">
+                <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-tight font-manrope">
                   {currentSlide.title}
                 </h1>
 
                 {/* Subtitle */}
-                <p className="text-base sm:text-lg text-slate-300 leading-relaxed font-normal">
+                <p className="text-base sm:text-lg text-slate-600 dark:text-slate-300 leading-relaxed font-normal">
                   {currentSlide.subtitle}
                 </p>
 
@@ -208,7 +212,7 @@ export const HeroCarousel: React.FC = () => {
                       variant="outline"
                       size="lg"
                       leftIcon={currentSlide.secondaryBtn.icon}
-                      className="border-white/30 text-white hover:bg-white/10 dark:hover:bg-white/10"
+                      className="border-slate-300 dark:border-white/30 text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/10"
                       target={currentSlide.secondaryBtn.isExternal ? '_blank' : undefined}
                       rel={currentSlide.secondaryBtn.isExternal ? 'noopener noreferrer' : undefined}
                     >
@@ -222,10 +226,10 @@ export const HeroCarousel: React.FC = () => {
         </div>
       </div>
 
-      {/* Navigation Controls: Arrows */}
+      {/* Navigation Controls: Arrows (Hidden on mobile responsive screens to prevent text overlap) */}
       <button
         onClick={prevSlide}
-        className="absolute left-4 top-1/2 -translate-y-1/2 z-30 p-3 rounded-full bg-slate-900/60 hover:bg-slate-900 border border-white/20 text-white transition-all focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 z-30 p-3 rounded-full bg-white/90 dark:bg-slate-900/60 hover:bg-white dark:hover:bg-slate-900 border border-slate-200 dark:border-white/20 text-slate-700 dark:text-white shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-purple-500"
         aria-label="Previous Slide"
       >
         <ChevronLeft className="w-6 h-6" aria-hidden="true" />
@@ -233,7 +237,7 @@ export const HeroCarousel: React.FC = () => {
 
       <button
         onClick={nextSlide}
-        className="absolute right-4 top-1/2 -translate-y-1/2 z-30 p-3 rounded-full bg-slate-900/60 hover:bg-slate-900 border border-white/20 text-white transition-all focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 z-30 p-3 rounded-full bg-white/90 dark:bg-slate-900/60 hover:bg-white dark:hover:bg-slate-900 border border-slate-200 dark:border-white/20 text-slate-700 dark:text-white shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-purple-500"
         aria-label="Next Slide"
       >
         <ChevronRight className="w-6 h-6" aria-hidden="true" />
@@ -245,9 +249,9 @@ export const HeroCarousel: React.FC = () => {
           <button
             key={slide.id}
             onClick={() => setCurrentIndex(index)}
-            className={`transition-all rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 ${index === currentIndex
-                ? 'w-8 h-2.5 bg-blue-500'
-                : 'w-2.5 h-2.5 bg-white/40 hover:bg-white/70'
+            className={`transition-all rounded-full focus:outline-none focus:ring-2 focus:ring-purple-500 ${index === currentIndex
+                ? 'w-8 h-2.5 bg-purple-600 dark:bg-purple-500'
+                : 'w-2.5 h-2.5 bg-slate-300 dark:bg-white/40 hover:bg-slate-400 dark:hover:bg-white/70'
               }`}
             aria-label={`Go to slide ${index + 1}`}
             aria-current={index === currentIndex ? 'true' : 'false'}

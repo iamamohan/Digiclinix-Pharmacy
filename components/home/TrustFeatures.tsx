@@ -35,7 +35,7 @@ const TRUST_FEATURES = [
 export const TrustFeatures: React.FC = () => {
   return (
     <section
-      className="py-16 md:py-24 bg-slate-50/60 dark:bg-[#0B1220] border-y border-slate-200/60 dark:border-slate-800/60 transition-colors duration-200"
+      className="py-16 md:py-24 bg-[#F4F7FF] dark:bg-slate-900 border-y border-[#E2ECFF] dark:border-slate-800/60 transition-colors duration-200"
       aria-label="Trust Credentials & Features"
     >
       <Container>
