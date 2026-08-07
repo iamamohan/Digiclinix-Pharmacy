@@ -347,7 +347,6 @@ Optimized for:
 
 # 📸 Screenshots
 
-Add screenshots of:
 
 <img width="1918" height="975" alt="image" src="https://github.com/user-attachments/assets/a460e09e-64f4-4ad7-b838-15986f7df0a1" />
 
