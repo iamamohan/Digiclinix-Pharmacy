@@ -349,15 +349,12 @@ Optimized for:
 
 Add screenshots of:
 
-- Home Page
-- Products Page
-- Shopping Cart
-- About Page
-- Contact Page
-- Dark Mode
-- Mobile View
+<img width="1918" height="975" alt="image" src="https://github.com/user-attachments/assets/a460e09e-64f4-4ad7-b838-15986f7df0a1" />
 
----
+<img width="1919" height="975" alt="image" src="https://github.com/user-attachments/assets/748b21dc-c505-40d8-899b-35a95c529118" />
+
+<img width="1916" height="976" alt="image" src="https://github.com/user-attachments/assets/c83d2686-b5b9-4a26-b12b-cfb3cc898a49" />
+
 
 # 🔮 Future Enhancements
 
@@ -401,19 +398,13 @@ git push origin feature/new-feature
 
 ---
 
-# 📄 License
-
-This project is licensed under the **MIT License**.
-
----
-
 # 👨‍💻 Developer
 
 **Mohan Kumar A**
 
 **Full Stack Developer**
 
-- 💼 LinkedIn: *(https://www.linkedin.com/in/mohan-kumar-sa/)*
+- 💼 LinkedIn: https://www.linkedin.com/in/mohan-kumar-sa/
 - 🌐 Live Demo: https://digiclinix-pharmacy.vercel.app/
 
 ---
