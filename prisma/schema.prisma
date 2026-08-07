@@ -1,0 +1,29 @@
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Product {
+  id                   String   @id @default(uuid())
+  name                 String
+  slug                 String   @unique
+  category             String
+  price                Decimal  @db.Decimal(10, 2)
+  description          String?
+  imageUrl             String?
+  inStock              Boolean  @default(true)
+  requiresPrescription Boolean  @default(false)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([slug])
+  @@index([category])
+  @@index([inStock])
+  @@index([requiresPrescription])
+  @@index([createdAt])
+}
