@@ -10,6 +10,8 @@ export interface ProductFormData {
   price: number | string;
   description?: string;
   imageUrl?: string;
+  imagePublicId?: string;
   inStock: boolean;
   requiresPrescription: boolean;
 }
+

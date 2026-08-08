@@ -7,6 +7,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: '/',
       disallow: ['/api/'],
     },
-    sitemap: 'https://digiclinix-pharmacy.vercel.app/sitemap.xml',
+    sitemap: 'https://digiclinixpharmacy.vercel.app/sitemap.xml',
   };
 }

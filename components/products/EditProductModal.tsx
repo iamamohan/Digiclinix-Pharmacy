@@ -30,6 +30,7 @@ export const EditProductModal: React.FC<EditProductModalProps> = ({
     price: product.price,
     description: product.description || '',
     imageUrl: product.imageUrl || '',
+    imagePublicId: product.imagePublicId || undefined,
     inStock: product.inStock,
     requiresPrescription: product.requiresPrescription,
   };

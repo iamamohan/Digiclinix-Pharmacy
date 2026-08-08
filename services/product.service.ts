@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { GetProductsQueryInput, CreateProductInput, UpdateProductInput } from '@/lib/validations/product.schema';
 import { slugify } from '@/utils/slugify';
 import { Prisma } from '@prisma/client';
+import { deleteCloudinaryAsset } from '@/lib/cloudinary';
 
 function serializeProduct(product: Prisma.ProductGetPayload<{}>) {
   return {
@@ -19,6 +20,7 @@ const FALLBACK_PRODUCTS = [
     price: '49.99',
     description: 'Effective pain relief and fever reduction. Suitable for adults and children over 12.',
     imageUrl: '/images/products/paracetamol.png',
+    imagePublicId: null,
     inStock: true,
     requiresPrescription: false,
     createdAt: new Date(),
@@ -32,6 +34,7 @@ const FALLBACK_PRODUCTS = [
     price: '129.50',
     description: 'Broad-spectrum antibiotic for treating bacterial infections.',
     imageUrl: '/images/products/amoxicillin.png',
+    imagePublicId: null,
     inStock: true,
     requiresPrescription: true,
     createdAt: new Date(),
@@ -45,6 +48,7 @@ const FALLBACK_PRODUCTS = [
     price: '299.00',
     description: 'Essential Vitamin D3 supplement for bone health and immune system support.',
     imageUrl: '/images/products/vitamin-d3.png',
+    imagePublicId: null,
     inStock: true,
     requiresPrescription: false,
     createdAt: new Date(),
@@ -58,6 +62,7 @@ const FALLBACK_PRODUCTS = [
     price: '89.00',
     description: 'Proton pump inhibitor for treating acid reflux, heartburn, and stomach ulcers.',
     imageUrl: '/images/products/omeprazole.png',
+    imagePublicId: null,
     inStock: true,
     requiresPrescription: true,
     createdAt: new Date(),
@@ -173,7 +178,7 @@ export const productService = {
       slug = await this.generateUniqueSlug(existingProduct.name, data.slug);
     }
 
-    const product = await prisma.product.update({
+    const updatedProduct = await prisma.product.update({
       where: { id },
       data: {
         ...data,
@@ -181,14 +186,38 @@ export const productService = {
       },
     });
 
-    return serializeProduct(product);
+    // Post-commit cleanup: If the database update succeeded AND a new image replaces an old Cloudinary image
+    const oldPublicId = existingProduct.imagePublicId;
+    const newPublicId = data.imagePublicId;
+
+    if (oldPublicId && newPublicId && oldPublicId !== newPublicId) {
+      try {
+        await deleteCloudinaryAsset(oldPublicId);
+      } catch (cleanupError) {
+        console.warn('[ProductService] Post-update Cloudinary asset cleanup warning:', cleanupError);
+      }
+    }
+
+    return serializeProduct(updatedProduct);
   },
 
   async remove(id: string) {
     const existingProduct = await prisma.product.findUnique({ where: { id } });
     if (!existingProduct) return false;
 
+    // Database deletion first
     await prisma.product.delete({ where: { id } });
+
+    // Post-commit cleanup: If DB deletion succeeded and Cloudinary public ID exists, clean up asset
+    if (existingProduct.imagePublicId) {
+      try {
+        await deleteCloudinaryAsset(existingProduct.imagePublicId);
+      } catch (cleanupError) {
+        console.warn('[ProductService] Post-delete Cloudinary asset cleanup warning:', cleanupError);
+      }
+    }
+
     return true;
   },
 };
+

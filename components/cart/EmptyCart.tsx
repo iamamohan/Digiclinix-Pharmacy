@@ -25,7 +25,7 @@ export const EmptyCart: React.FC<EmptyCartProps> = ({ onClose }) => {
         Your cart is empty
       </h3>
       <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 max-w-xs leading-relaxed">
-        Looks like you haven't added any medicines or health supplies to your cart yet.
+        Looks like you haven&apos;t added any medicines or health supplies to your cart yet.
       </p>
 
       <div className="mt-8 flex flex-col gap-3 w-full max-w-xs">

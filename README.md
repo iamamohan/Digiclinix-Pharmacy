@@ -357,7 +357,6 @@ Optimized for:
 
 # 🔮 Future Enhancements
 
-- User Authentication
 - Order Management
 - Online Payment Integration
 - Wishlist
@@ -404,7 +403,7 @@ git push origin feature/new-feature
 **Full Stack Developer**
 
 - 💼 LinkedIn: https://www.linkedin.com/in/mohan-kumar-sa/
-- 🌐 Live Demo: https://digiclinix-pharmacy.vercel.app/
+- 🌐 Live Demo: https://digiclinixpharmacy.vercel.app/
 
 ---
 

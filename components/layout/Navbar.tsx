@@ -3,10 +3,12 @@
 import React, { useState, useEffect, useRef, Suspense } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { Search, ShoppingBag, Menu, X } from 'lucide-react';
 import { Logo } from './Logo';
 import { ThemeToggle } from './ThemeToggle';
 import { MobileMenu } from './MobileMenu';
+import { UserMenu } from '../auth/UserMenu';
 import { Container } from '../ui/Container';
 import { cn } from '@/lib/utils/cn';
 import { useCart } from '@/components/providers/cart-provider';
@@ -146,6 +148,7 @@ export const Navbar: React.FC = () => {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { totalItems, openCart } = useCart();
+  const { data: session, status } = useSession();
 
   return (
     <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-white/85 dark:bg-slate-950/85 border-b border-slate-200/80 dark:border-slate-800/80 shadow-xs transition-colors duration-200" role="banner">
@@ -202,6 +205,26 @@ export const Navbar: React.FC = () => {
 
           {/* Theme Toggle */}
           <ThemeToggle />
+
+          {/* Authentication State: User Menu or Login/Signup buttons */}
+          {status === 'authenticated' && session?.user ? (
+            <UserMenu user={session.user} />
+          ) : (
+            <div className="flex items-center gap-1.5 ml-1">
+              <Link
+                href="/login"
+                className="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-slate-100 dark:hover:bg-slate-900 transition-all focus:outline-none focus:ring-2 focus:ring-purple-500"
+              >
+                Log In
+              </Link>
+              <Link
+                href="/signup"
+                className="px-3.5 py-1.5 rounded-xl text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 shadow-xs transition-all focus:outline-none focus:ring-2 focus:ring-purple-500"
+              >
+                Sign Up
+              </Link>
+            </div>
+          )}
         </div>
 
         {/* Mobile Actions */}

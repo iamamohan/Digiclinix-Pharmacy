@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ProductFormData } from '@/types/product';
 import { Button } from '@/components/ui/Button';
+import { ProductImageUpload } from './ProductImageUpload';
 
 export interface ProductFormProps {
   initialValues?: Partial<ProductFormData>;
@@ -16,7 +17,6 @@ interface FormErrors {
   name?: string;
   category?: string;
   price?: string;
-  imageUrl?: string;
 }
 
 export const ProductForm: React.FC<ProductFormProps> = ({
@@ -30,16 +30,17 @@ export const ProductForm: React.FC<ProductFormProps> = ({
   const [category, setCategory] = useState(initialValues?.category || '');
   const [price, setPrice] = useState(initialValues?.price !== undefined ? String(initialValues.price) : '');
   const [description, setDescription] = useState(initialValues?.description || '');
-  const [imageUrl, setImageUrl] = useState(initialValues?.imageUrl || '');
+  const [imageUrl, setImageUrl] = useState<string | undefined>(initialValues?.imageUrl || undefined);
+  const [imagePublicId, setImagePublicId] = useState<string | undefined>(initialValues?.imagePublicId || undefined);
   const [inStock, setInStock] = useState(initialValues?.inStock ?? true);
   const [requiresPrescription, setRequiresPrescription] = useState(initialValues?.requiresPrescription ?? false);
 
+  const [isUploading, setIsUploading] = useState<boolean>(false);
   const [errors, setErrors] = useState<FormErrors>({});
 
   const nameInputRef = useRef<HTMLInputElement>(null);
   const categoryInputRef = useRef<HTMLInputElement>(null);
   const priceInputRef = useRef<HTMLInputElement>(null);
-  const imageUrlInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (initialValues) {
@@ -47,7 +48,8 @@ export const ProductForm: React.FC<ProductFormProps> = ({
       setCategory(initialValues.category || '');
       setPrice(initialValues.price !== undefined ? String(initialValues.price) : '');
       setDescription(initialValues.description || '');
-      setImageUrl(initialValues.imageUrl || '');
+      setImageUrl(initialValues.imageUrl || undefined);
+      setImagePublicId(initialValues.imagePublicId || undefined);
       setInStock(initialValues.inStock ?? true);
       setRequiresPrescription(initialValues.requiresPrescription ?? false);
     }
@@ -73,21 +75,14 @@ export const ProductForm: React.FC<ProductFormProps> = ({
       newErrors.price = 'Price must be greater than 0';
     }
 
-    if (imageUrl.trim() && !/^https?:\/\/.+/i.test(imageUrl.trim())) {
-      newErrors.imageUrl = 'Image URL must start with http:// or https://';
-    }
-
     setErrors(newErrors);
 
-    // Focus the first invalid field (Recommendation 8)
     if (newErrors.name) {
       nameInputRef.current?.focus();
     } else if (newErrors.category) {
       categoryInputRef.current?.focus();
     } else if (newErrors.price) {
       priceInputRef.current?.focus();
-    } else if (newErrors.imageUrl) {
-      imageUrlInputRef.current?.focus();
     }
 
     return Object.keys(newErrors).length === 0;
@@ -95,14 +90,15 @@ export const ProductForm: React.FC<ProductFormProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validate()) return;
+    if (!validate() || isUploading) return;
 
     const data: ProductFormData = {
       name: name.trim(),
       category: category.trim(),
       price: parseFloat(price),
       description: description.trim() || undefined,
-      imageUrl: imageUrl.trim() || undefined,
+      imageUrl: imageUrl || undefined,
+      imagePublicId: imagePublicId || undefined,
       inStock,
       requiresPrescription,
     };
@@ -114,7 +110,10 @@ export const ProductForm: React.FC<ProductFormProps> = ({
     <form onSubmit={handleSubmit} className="space-y-5">
       {/* Product Name */}
       <div>
-        <label htmlFor="product-form-name" className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+        <label
+          htmlFor="product-form-name"
+          className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5"
+        >
           Product Name <span className="text-red-500">*</span>
         </label>
         <input
@@ -127,7 +126,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
             if (errors.name) setErrors((prev) => ({ ...prev, name: undefined }));
           }}
           placeholder="e.g. Paracetamol 500mg Tablets"
-          className="w-full px-3.5 py-2.5 text-sm rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3.5 py-2.5 text-sm rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
         />
         {errors.name && <p className="text-xs text-red-500 mt-1 font-medium">{errors.name}</p>}
       </div>
@@ -135,7 +134,10 @@ export const ProductForm: React.FC<ProductFormProps> = ({
       {/* Category & Price (2 Columns) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label htmlFor="product-form-category" className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+          <label
+            htmlFor="product-form-category"
+            className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5"
+          >
             Category <span className="text-red-500">*</span>
           </label>
           <input
@@ -148,13 +150,16 @@ export const ProductForm: React.FC<ProductFormProps> = ({
               if (errors.category) setErrors((prev) => ({ ...prev, category: undefined }));
             }}
             placeholder="e.g. Pain Relief"
-            className="w-full px-3.5 py-2.5 text-sm rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3.5 py-2.5 text-sm rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
           />
           {errors.category && <p className="text-xs text-red-500 mt-1 font-medium">{errors.category}</p>}
         </div>
 
         <div>
-          <label htmlFor="product-form-price" className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+          <label
+            htmlFor="product-form-price"
+            className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5"
+          >
             Price ($) <span className="text-red-500">*</span>
           </label>
           <input
@@ -169,7 +174,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
               if (errors.price) setErrors((prev) => ({ ...prev, price: undefined }));
             }}
             placeholder="e.g. 49.99"
-            className="w-full px-3.5 py-2.5 text-sm rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3.5 py-2.5 text-sm rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
           />
           {errors.price && <p className="text-xs text-red-500 mt-1 font-medium">{errors.price}</p>}
         </div>
@@ -177,7 +182,10 @@ export const ProductForm: React.FC<ProductFormProps> = ({
 
       {/* Description */}
       <div>
-        <label htmlFor="product-form-description" className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+        <label
+          htmlFor="product-form-description"
+          className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5"
+        >
           Description (Optional)
         </label>
         <textarea
@@ -186,29 +194,27 @@ export const ProductForm: React.FC<ProductFormProps> = ({
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Brief product description or usage instructions..."
-          className="w-full px-3.5 py-2.5 text-sm rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+          className="w-full px-3.5 py-2.5 text-sm rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
         />
       </div>
 
-      {/* Image URL */}
-      <div>
-        <label htmlFor="product-form-image" className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
-          Image URL (Optional)
-        </label>
-        <input
-          ref={imageUrlInputRef}
-          id="product-form-image"
-          type="url"
-          value={imageUrl}
-          onChange={(e) => {
-            setImageUrl(e.target.value);
-            if (errors.imageUrl) setErrors((prev) => ({ ...prev, imageUrl: undefined }));
-          }}
-          placeholder="https://example.com/product-image.jpg"
-          className="w-full px-3.5 py-2.5 text-sm rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        {errors.imageUrl && <p className="text-xs text-red-500 mt-1 font-medium">{errors.imageUrl}</p>}
-      </div>
+      {/* Cloudinary Product Image Upload Component */}
+      <ProductImageUpload
+        currentImageUrl={imageUrl}
+        currentImagePublicId={imagePublicId}
+        onUploadStart={() => setIsUploading(true)}
+        onUploadSuccess={(info) => {
+          setIsUploading(false);
+          setImageUrl(info.imageUrl);
+          setImagePublicId(info.imagePublicId);
+        }}
+        onUploadError={() => setIsUploading(false)}
+        onClear={() => {
+          setImageUrl(undefined);
+          setImagePublicId(undefined);
+        }}
+        disabled={isSubmitting}
+      />
 
       {/* Toggles: In Stock & Rx Required */}
       <div className="pt-2 flex flex-col sm:flex-row gap-4 sm:items-center">
@@ -217,7 +223,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
             type="checkbox"
             checked={inStock}
             onChange={(e) => setInStock(e.target.checked)}
-            className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300 dark:border-slate-700"
+            className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 border-slate-300 dark:border-slate-700"
           />
           <span className="text-sm font-medium text-slate-800 dark:text-slate-200">In Stock</span>
         </label>
@@ -227,21 +233,29 @@ export const ProductForm: React.FC<ProductFormProps> = ({
             type="checkbox"
             checked={requiresPrescription}
             onChange={(e) => setRequiresPrescription(e.target.checked)}
-            className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300 dark:border-slate-700"
+            className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 border-slate-300 dark:border-slate-700"
           />
-          <span className="text-sm font-medium text-slate-800 dark:text-slate-200">Prescription Required (Rx)</span>
+          <span className="text-sm font-medium text-slate-800 dark:text-slate-200">
+            Prescription Required (Rx)
+          </span>
         </label>
       </div>
 
       {/* Form Buttons */}
       <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100 dark:border-slate-800">
         {onCancel && (
-          <Button type="button" variant="outline" size="md" onClick={onCancel} disabled={isSubmitting}>
+          <Button type="button" variant="outline" size="md" onClick={onCancel} disabled={isSubmitting || isUploading}>
             Cancel
           </Button>
         )}
-        <Button type="submit" variant="primary" size="md" isLoading={isSubmitting} disabled={isSubmitting}>
-          {isSubmitting ? 'Saving...' : submitText}
+        <Button
+          type="submit"
+          variant="primary"
+          size="md"
+          isLoading={isSubmitting}
+          disabled={isSubmitting || isUploading}
+        >
+          {isUploading ? 'Uploading Image...' : isSubmitting ? 'Saving...' : submitText}
         </Button>
       </div>
     </form>

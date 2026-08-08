@@ -8,6 +8,8 @@ import { CartDrawer } from '@/components/cart/CartDrawer';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 
+import { AuthSessionProvider } from '@/components/auth/AuthSessionProvider';
+
 const manrope = Manrope({
   subsets: ['latin'],
   weight: ['600', '700'],
@@ -56,18 +58,20 @@ export default function RootLayout({
         >
           Skip to main content
         </a>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <ToastProvider>
-            <CartProvider>
-              <Navbar />
-              <main id="main-content" className="flex-grow">
-                {children}
-              </main>
-              <Footer />
-              <CartDrawer />
-            </CartProvider>
-          </ToastProvider>
-        </ThemeProvider>
+        <AuthSessionProvider>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            <ToastProvider>
+              <CartProvider>
+                <Navbar />
+                <main id="main-content" className="flex-grow">
+                  {children}
+                </main>
+                <Footer />
+                <CartDrawer />
+              </CartProvider>
+            </ToastProvider>
+          </ThemeProvider>
+        </AuthSessionProvider>
       </body>
     </html>
   );

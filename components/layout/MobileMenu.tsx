@@ -4,7 +4,8 @@ import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { X, PhoneCall, Search, ShieldCheck, Home, Package, Info, Phone } from 'lucide-react';
+import { useSession, signOut } from 'next-auth/react';
+import { X, PhoneCall, Search, ShieldCheck, Home, Package, Info, Phone, User as UserIcon, LogOut } from 'lucide-react';
 import { Logo } from './Logo';
 import { ThemeToggle } from './ThemeToggle';
 import { cn } from '@/lib/utils/cn';
@@ -25,6 +26,7 @@ const LINK_ICONS: Record<string, React.ReactNode> = {
 export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, navLinks }) => {
   const pathname = usePathname();
   const router = useRouter();
+  const { data: session, status } = useSession();
   const [mounted, setMounted] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -61,6 +63,8 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, navLink
   };
 
   if (!isOpen || !mounted) return null;
+
+  const displayName = session?.user?.name || session?.user?.email?.split('@')[0] || 'User';
 
   return createPortal(
     <div
@@ -116,7 +120,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, navLink
                   href={link.href}
                   onClick={onClose}
                   className={cn(
-                    'px-4 py-3.5 rounded-xl font-bold text-base transition-all flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-purple-500',
+                    'px-4 py-3 rounded-xl font-bold text-base transition-all flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-purple-500',
                     isActive
                       ? 'bg-purple-600 text-white shadow-md shadow-purple-500/30'
                       : 'text-slate-900 dark:text-slate-100 hover:bg-purple-50 dark:hover:bg-slate-900 hover:text-purple-600 dark:hover:text-purple-400'
@@ -135,9 +139,62 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, navLink
         </div>
 
         {/* Drawer Footer */}
-        <div className="border-t border-slate-200 dark:border-slate-800 pt-6 mt-6 flex flex-col gap-4">
-          <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-900 p-3 rounded-xl border border-slate-200/80 dark:border-slate-800">
-            <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">Theme</span>
+        <div className="border-t border-slate-200 dark:border-slate-800 pt-5 mt-5 flex flex-col gap-3.5">
+          {/* User Auth Section in Mobile Menu */}
+          {status === 'authenticated' && session?.user ? (
+            <div className="p-3.5 rounded-2xl bg-purple-50 dark:bg-slate-900 border border-purple-100 dark:border-slate-800 space-y-2.5">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-purple-600 text-white font-bold text-xs flex items-center justify-center shrink-0">
+                  {displayName[0].toUpperCase()}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-bold text-slate-900 dark:text-white truncate">{displayName}</p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">{session.user.email}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2 pt-1 border-t border-purple-200/60 dark:border-slate-800">
+                <Link
+                  href="/account"
+                  onClick={onClose}
+                  className="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-bold bg-white dark:bg-slate-800 text-purple-700 dark:text-purple-300 border border-purple-200/80 dark:border-slate-700"
+                >
+                  <UserIcon className="w-3.5 h-3.5" />
+                  <span>Account</span>
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    signOut({ callbackUrl: '/' });
+                  }}
+                  className="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-bold bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border border-red-200/60 dark:border-red-800/60"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>Log Out</span>
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-2.5">
+              <Link
+                href="/login"
+                onClick={onClose}
+                className="py-2.5 px-4 text-center rounded-xl font-bold text-xs bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-800"
+              >
+                Log In
+              </Link>
+              <Link
+                href="/signup"
+                onClick={onClose}
+                className="py-2.5 px-4 text-center rounded-xl font-bold text-xs bg-purple-600 text-white shadow-xs hover:bg-purple-700"
+              >
+                Sign Up
+              </Link>
+            </div>
+          )}
+
+          <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-900 p-2.5 rounded-xl border border-slate-200/80 dark:border-slate-800">
+            <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">Theme</span>
             <ThemeToggle />
           </div>
 
@@ -145,14 +202,14 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, navLink
             href="https://wa.me/919182015238"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 p-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-md shadow-emerald-500/20 transition-all text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+            className="flex items-center justify-center gap-2 p-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-md shadow-emerald-500/20 transition-all text-xs focus:outline-none focus:ring-2 focus:ring-emerald-400"
           >
             <PhoneCall className="w-4 h-4" />
             <span>WhatsApp Support</span>
           </a>
 
-          <div className="flex items-center justify-center gap-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400">
-            <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
+          <div className="flex items-center justify-center gap-1.5 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
             <span>Licensed Pharmaceutical Provider</span>
           </div>
         </div>

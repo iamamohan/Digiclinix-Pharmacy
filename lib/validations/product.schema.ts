@@ -43,7 +43,8 @@ export const createProductSchema = z.object({
   category: z.string().min(1, 'Category is required').trim(),
   price: z.coerce.number().positive('Price must be greater than 0'),
   description: z.string().trim().optional(),
-  imageUrl: z.string().url('Invalid image URL format').optional(),
+  imageUrl: z.string().trim().optional(),
+  imagePublicId: z.string().trim().optional(),
   inStock: z.boolean().default(true),
   requiresPrescription: z.boolean().default(false),
 });
