@@ -6,7 +6,7 @@ import { authOptions } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { Container } from '@/components/ui/Container';
 import { Badge } from '@/components/ui/Badge';
-import { User, Mail, Calendar, ShieldCheck, KeyRound } from 'lucide-react';
+import { User, Mail, Calendar, ShieldCheck, KeyRound, Shield, CheckCircle2, AlertCircle } from 'lucide-react';
 import { SignOutButton } from '@/components/auth/SignOutButton';
 
 export const metadata: Metadata = {
@@ -61,6 +61,13 @@ export default async function AccountPage() {
     .join('')
     .substring(0, 2)
     .toUpperCase();
+
+  // Email verification label
+  const verificationLabel = hasGoogleAccount
+    ? 'Verified via Google'
+    : user.emailVerified
+    ? 'Verified'
+    : 'Not Verified';
 
   return (
     <div className="py-12 md:py-20 bg-slate-50/60 dark:bg-slate-950/40 min-h-[calc(100vh-4.5rem)]">
@@ -132,6 +139,28 @@ export default async function AccountPage() {
                   <span>Auth Provider</span>
                 </div>
                 <p className="text-sm font-bold text-purple-600 dark:text-purple-400">{providerLabel}</p>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800/60 space-y-1">
+                <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-purple-500" aria-hidden="true" />
+                  <span>Email Verification</span>
+                </div>
+                <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{verificationLabel}</p>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800/60 space-y-1">
+                <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
+                  <Shield className="w-3.5 h-3.5 text-purple-500" aria-hidden="true" />
+                  <span>Account Type</span>
+                </div>
+                <p className={`text-sm font-bold ${
+                  user.role === 'ADMIN'
+                    ? 'text-purple-600 dark:text-purple-400'
+                    : 'text-slate-900 dark:text-white'
+                }`}>
+                  {user.role === 'ADMIN' ? 'Administrator' : 'Normal User'}
+                </p>
               </div>
 
               <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800/60 space-y-1">

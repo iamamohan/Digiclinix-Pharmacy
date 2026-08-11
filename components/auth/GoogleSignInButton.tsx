@@ -55,7 +55,7 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
           />
         </svg>
       }
-      className={`w-full font-bold border-slate-300 dark:border-slate-700 bg-white dark:bg-[#111827] text-slate-800 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800/80 shadow-xs ${className || ''}`}
+      className={`w-full font-bold border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 text-slate-800 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800/80 rounded-xl py-3 shadow-xs transition-all ${className || ''}`}
       aria-label={text}
     >
       {text}

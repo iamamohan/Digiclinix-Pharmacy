@@ -79,6 +79,32 @@ export function conflict(message = 'Resource conflict') {
   );
 }
 
+export function unauthorized(message = 'Authentication required') {
+  return NextResponse.json(
+    {
+      success: false,
+      error: {
+        code: 'UNAUTHORIZED',
+        message,
+      },
+    },
+    { status: 401 }
+  );
+}
+
+export function forbidden(message = 'Insufficient permissions') {
+  return NextResponse.json(
+    {
+      success: false,
+      error: {
+        code: 'FORBIDDEN',
+        message,
+      },
+    },
+    { status: 403 }
+  );
+}
+
 export function internalError(message = 'An unexpected server error occurred') {
   return NextResponse.json(
     {

@@ -59,7 +59,7 @@ export default function RootLayout({
           Skip to main content
         </a>
         <AuthSessionProvider>
-          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} themes={['light', 'dark']}>
             <ToastProvider>
               <CartProvider>
                 <Navbar />

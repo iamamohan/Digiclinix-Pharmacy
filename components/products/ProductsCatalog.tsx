@@ -2,6 +2,7 @@
 
 import React, { useMemo, useCallback, useState, useEffect } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { useProducts } from '@/hooks/useProducts';
 import { useToast } from '@/components/providers/toast-provider';
 import { ProductsSummary } from './ProductsSummary';
@@ -28,6 +29,10 @@ export const ProductsCatalog: React.FC = () => {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const toast = useToast();
+  const { data: session } = useSession();
+
+  // Derive admin status from session role (frontend gate only — real enforcement is server-side)
+  const isAdmin = session?.user?.role === 'ADMIN';
 
   // Extract current query parameters from URL
   const search = searchParams.get('search') || '';
@@ -318,16 +323,19 @@ export const ProductsCatalog: React.FC = () => {
               onSortChange={handleSortChange}
             />
 
-            <Button
-              variant="primary"
-              size="md"
-              leftIcon={<Plus className="w-4 h-4" aria-hidden="true" />}
-              onClick={() => setIsAddModalOpen(true)}
-              className="shrink-0"
-              aria-label="Add new product to catalog"
-            >
-              Add Product
-            </Button>
+            {/* Add Product button — ADMIN only */}
+            {isAdmin && (
+              <Button
+                variant="primary"
+                size="md"
+                leftIcon={<Plus className="w-4 h-4" aria-hidden="true" />}
+                onClick={() => setIsAddModalOpen(true)}
+                className="shrink-0"
+                aria-label="Add new product to catalog"
+              >
+                Add Product
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -377,8 +385,8 @@ export const ProductsCatalog: React.FC = () => {
               ? 'Try changing your search keywords or active filter parameters.'
               : 'There are currently no healthcare products available in the catalog.'
           }
-          actionText={hasActiveFilters ? 'Reset Filters' : 'Add First Product'}
-          onAction={hasActiveFilters ? handleClearAll : () => setIsAddModalOpen(true)}
+          actionText={hasActiveFilters ? 'Reset Filters' : isAdmin ? 'Add First Product' : undefined}
+          onAction={hasActiveFilters ? handleClearAll : isAdmin ? () => setIsAddModalOpen(true) : undefined}
         />
       )}
 
@@ -397,8 +405,8 @@ export const ProductsCatalog: React.FC = () => {
           <ProductGrid
             products={localProducts}
             onViewDetails={(p) => setDetailsProduct(p)}
-            onEdit={(p) => setEditingProduct(p)}
-            onDelete={(p) => setDeletingProduct(p)}
+            onEdit={isAdmin ? (p) => setEditingProduct(p) : undefined}
+            onDelete={isAdmin ? (p) => setDeletingProduct(p) : undefined}
           />
 
           <Pagination
@@ -409,43 +417,47 @@ export const ProductsCatalog: React.FC = () => {
         </>
       )}
 
-      {/* ─── CRUD MODALS ─── */}
+      {/* ─── CRUD MODALS (ADMIN only) ─── */}
 
-      {/* 1. Add Product Modal */}
-      <AddProductModal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        onAdd={handleAddProduct}
-        isSubmitting={isSubmittingAdd}
-      />
+      {isAdmin && (
+        <>
+          {/* 1. Add Product Modal */}
+          <AddProductModal
+            isOpen={isAddModalOpen}
+            onClose={() => setIsAddModalOpen(false)}
+            onAdd={handleAddProduct}
+            isSubmitting={isSubmittingAdd}
+          />
 
-      {/* 2. Edit Product Modal */}
-      <EditProductModal
-        isOpen={Boolean(editingProduct)}
-        product={editingProduct}
-        onClose={() => setEditingProduct(null)}
-        onUpdate={handleUpdateProduct}
-        isSubmitting={isSubmittingEdit}
-      />
+          {/* 2. Edit Product Modal */}
+          <EditProductModal
+            isOpen={Boolean(editingProduct)}
+            product={editingProduct}
+            onClose={() => setEditingProduct(null)}
+            onUpdate={handleUpdateProduct}
+            isSubmitting={isSubmittingEdit}
+          />
 
-      {/* 3. Delete Confirmation Dialog */}
-      <DeleteProductDialog
-        isOpen={Boolean(deletingProduct)}
-        product={deletingProduct}
-        onClose={() => setDeletingProduct(null)}
-        onConfirmDelete={handleDeleteProduct}
-        isDeleting={isSubmittingDelete}
-      />
+          {/* 3. Delete Confirmation Dialog */}
+          <DeleteProductDialog
+            isOpen={Boolean(deletingProduct)}
+            product={deletingProduct}
+            onClose={() => setDeletingProduct(null)}
+            onConfirmDelete={handleDeleteProduct}
+            isDeleting={isSubmittingDelete}
+          />
+        </>
+      )}
 
-      {/* 4. Product Details Modal */}
+      {/* 4. Product Details Modal — visible to all */}
       <ProductDetailsModal
         isOpen={Boolean(detailsProduct)}
         product={detailsProduct}
         onClose={() => setDetailsProduct(null)}
-        onEdit={(p) => {
+        onEdit={isAdmin ? (p) => {
           setDetailsProduct(null);
           setEditingProduct(p);
-        }}
+        } : undefined}
       />
     </div>
   );

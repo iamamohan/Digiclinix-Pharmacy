@@ -3,6 +3,7 @@ import { getProductsQuerySchema, createProductSchema } from '@/lib/validations/p
 import { productService } from '@/services/product.service';
 import { paginated, created } from '@/lib/response';
 import { handleApiError } from '@/lib/error';
+import { requireAdmin } from '@/lib/auth/authorization';
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,6 +19,10 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  // ADMIN-only: create product
+  const { user: _admin, response: authError } = await requireAdmin();
+  if (authError) return authError;
+
   try {
     const body = await request.json();
     const validatedData = createProductSchema.parse(body);

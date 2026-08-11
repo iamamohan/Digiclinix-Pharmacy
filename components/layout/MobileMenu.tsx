@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
-import { X, PhoneCall, Search, ShieldCheck, Home, Package, Info, Phone, User as UserIcon, LogOut } from 'lucide-react';
+import { X, PhoneCall, Search, ShieldCheck, Home, Package, Info, Phone, User as UserIcon, LogOut, Settings } from 'lucide-react';
 import { Logo } from './Logo';
 import { ThemeToggle } from './ThemeToggle';
 import { cn } from '@/lib/utils/cn';
@@ -173,6 +173,18 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, navLink
                   <span>Log Out</span>
                 </button>
               </div>
+
+              {/* Product Management link — ADMIN only */}
+              {session.user.role === 'ADMIN' && (
+                <Link
+                  href="/products"
+                  onClick={onClose}
+                  className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200/60 dark:border-purple-800/60 mt-1"
+                >
+                  <Settings className="w-3.5 h-3.5" />
+                  <span>Product Management</span>
+                </Link>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-2.5">

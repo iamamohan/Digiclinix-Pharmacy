@@ -208,7 +208,7 @@ export const Navbar: React.FC = () => {
 
           {/* Authentication State: User Menu or Login/Signup buttons */}
           {status === 'authenticated' && session?.user ? (
-            <UserMenu user={session.user} />
+            <UserMenu user={session.user} role={session.user.role} />
           ) : (
             <div className="flex items-center gap-1.5 ml-1">
               <Link

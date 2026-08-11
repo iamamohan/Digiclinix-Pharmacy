@@ -3,6 +3,7 @@ import { productService } from '@/services/product.service';
 import { ok, notFound } from '@/lib/response';
 import { handleApiError } from '@/lib/error';
 import { productIdParamSchema, updateProductSchema } from '@/lib/validations/product.schema';
+import { requireAdmin } from '@/lib/auth/authorization';
 
 export async function GET(
   request: NextRequest,
@@ -28,6 +29,10 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // ADMIN-only: update product
+  const { user: _admin, response: authError } = await requireAdmin();
+  if (authError) return authError;
+
   try {
     const { id } = await params;
     const sanitizedId = productIdParamSchema.parse(id);
@@ -51,6 +56,10 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // ADMIN-only: delete product
+  const { user: _admin, response: authError } = await requireAdmin();
+  if (authError) return authError;
+
   try {
     const { id } = await params;
     const sanitizedId = productIdParamSchema.parse(id);

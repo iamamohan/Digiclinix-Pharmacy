@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { signOut } from 'next-auth/react';
-import { User as UserIcon, LogOut, ChevronDown } from 'lucide-react';
+import { User as UserIcon, LogOut, ChevronDown, Settings } from 'lucide-react';
 import { useToast } from '@/components/providers/toast-provider';
 
 export interface UserMenuProps {
@@ -13,9 +13,10 @@ export interface UserMenuProps {
     email?: string | null;
     image?: string | null;
   };
+  role?: string;
 }
 
-export const UserMenu: React.FC<UserMenuProps> = ({ user }) => {
+export const UserMenu: React.FC<UserMenuProps> = ({ user, role }) => {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const { success: toastSuccess } = useToast();
@@ -114,6 +115,18 @@ export const UserMenu: React.FC<UserMenuProps> = ({ user }) => {
               <UserIcon className="w-4 h-4 shrink-0 text-slate-400" aria-hidden="true" />
               <span>My Account</span>
             </Link>
+
+            {/* Product Management — ADMIN only */}
+            {role === 'ADMIN' && (
+              <Link
+                href="/products"
+                onClick={() => setIsOpen(false)}
+                className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-950/40 transition-colors"
+              >
+                <Settings className="w-4 h-4 shrink-0 text-purple-500" aria-hidden="true" />
+                <span>Product Management</span>
+              </Link>
+            )}
 
             <button
               type="button"

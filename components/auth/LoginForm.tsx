@@ -3,13 +3,21 @@
 import React, { useState, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
-import Link from 'next/link';
-import { Eye, EyeOff, Lock, Mail, AlertCircle } from 'lucide-react';
+import { Mail, AlertCircle, MailWarning, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { GoogleSignInButton } from './GoogleSignInButton';
+import { PasswordInput } from './PasswordInput';
 import { useToast } from '@/components/providers/toast-provider';
 
-export const LoginForm: React.FC = () => {
+export interface LoginFormProps {
+  onSwitchToSignup?: () => void;
+  onUnverifiedEmail?: (email: string) => void;
+}
+
+export const LoginForm: React.FC<LoginFormProps> = ({
+  onSwitchToSignup,
+  onUnverifiedEmail,
+}) => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl') || '/account';
@@ -17,9 +25,9 @@ export const LoginForm: React.FC = () => {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isUnverified, setIsUnverified] = useState(false);
 
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
 
@@ -56,10 +64,13 @@ export const LoginForm: React.FC = () => {
 
     setIsSubmitting(true);
     setErrorMessage(null);
+    setIsUnverified(false);
+
+    const userEmail = email.trim().toLowerCase();
 
     try {
       const result = await signIn('credentials', {
-        email: email.trim().toLowerCase(),
+        email: userEmail,
         password,
         redirect: false,
         callbackUrl,
@@ -70,9 +81,16 @@ export const LoginForm: React.FC = () => {
       }
 
       if (result.error) {
-        const msg = 'Invalid email or password. Please try again.';
-        setErrorMessage(msg);
-        toastError(msg);
+        if (result.error.includes('UNVERIFIED_EMAIL')) {
+          setIsUnverified(true);
+          const msg = 'Please verify your email before signing in.';
+          setErrorMessage(msg);
+          toastError(msg);
+        } else {
+          const msg = 'Invalid email or password.';
+          setErrorMessage(msg);
+          toastError(msg);
+        }
         setIsSubmitting(false);
         return;
       }
@@ -88,16 +106,34 @@ export const LoginForm: React.FC = () => {
     }
   };
 
+  const handleTriggerVerification = () => {
+    if (onUnverifiedEmail) {
+      onUnverifiedEmail(email.trim().toLowerCase());
+    } else {
+      router.push(`/verify-email?email=${encodeURIComponent(email.trim().toLowerCase())}`);
+    }
+  };
+
   return (
-    <div className="w-full max-w-md mx-auto space-y-6">
-      {/* Google OAuth Quick Sign In */}
+    <div className="w-full space-y-6">
+      {/* Header */}
+      <div className="text-center space-y-1">
+        <h2 className="text-2xl font-extrabold font-manrope text-slate-900 dark:text-white">
+          Welcome back
+        </h2>
+        <p className="text-xs text-slate-600 dark:text-slate-400">
+          Sign in to your Digiclinix account to continue
+        </p>
+      </div>
+
+      {/* Top Google OAuth Button */}
       <GoogleSignInButton text="Continue with Google" callbackUrl={callbackUrl} />
 
-      {/* Or Divider */}
-      <div className="relative flex items-center justify-center my-6">
+      {/* Divider */}
+      <div className="relative flex items-center justify-center my-5">
         <div className="w-full border-t border-slate-200 dark:border-slate-800" />
-        <span className="absolute px-3 text-xs font-semibold uppercase tracking-wider text-slate-400 bg-white dark:bg-slate-950">
-          Or login with email
+        <span className="absolute px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-400 bg-white dark:bg-[#111827]">
+          or
         </span>
       </div>
 
@@ -106,38 +142,69 @@ export const LoginForm: React.FC = () => {
         <div
           role="alert"
           aria-live="polite"
-          className="flex items-start gap-2.5 p-3.5 rounded-xl bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 text-xs font-medium border border-red-200 dark:border-red-800/60"
+          className={`p-4 rounded-xl text-xs border space-y-2.5 ${
+            isUnverified
+              ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800/60'
+              : 'bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800/60'
+          }`}
         >
-          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
-          <span>{errorMessage}</span>
+          <div className="flex items-start gap-2.5">
+            {isUnverified ? (
+              <MailWarning className="w-4 h-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" aria-hidden="true" />
+            ) : (
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
+            )}
+            <span className="font-medium">{errorMessage}</span>
+          </div>
+
+          {isUnverified && (
+            <div className="pt-2 border-t border-amber-200/80 dark:border-amber-800/50 flex items-center justify-between gap-2">
+              <span className="text-[11px] font-normal text-amber-700 dark:text-amber-400">
+                Have a 6-digit verification code?
+              </span>
+              <button
+                type="button"
+                onClick={handleTriggerVerification}
+                className="text-xs font-bold text-purple-600 dark:text-purple-400 hover:underline focus:outline-none inline-flex items-center gap-1 shrink-0"
+              >
+                <span>Enter Code</span>
+                <ArrowRight className="w-3 h-3" />
+              </button>
+            </div>
+          )}
         </div>
       )}
 
-      {/* Login Form */}
+      {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-        {/* Email Field */}
-        <div>
+        {/* Email */}
+        <div className="space-y-1.5">
           <label
             htmlFor="login-email"
-            className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5"
+            className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300"
           >
-            Email Address <span className="text-red-500">*</span>
+            Email <span className="text-red-500">*</span>
           </label>
           <div className="relative">
-            <Mail className="absolute left-3.5 top-3 w-4 h-4 text-slate-400" aria-hidden="true" />
+            <Mail className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-400" aria-hidden="true" />
             <input
               ref={emailRef}
               id="login-email"
               type="email"
+              required
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value);
                 if (fieldErrors.email) setFieldErrors((prev) => ({ ...prev, email: undefined }));
               }}
-              placeholder="you@example.com"
+              placeholder="Enter your email"
               aria-invalid={Boolean(fieldErrors.email)}
               aria-describedby={fieldErrors.email ? 'login-email-error' : undefined}
-              className="w-full pl-10 pr-3.5 py-2.5 text-sm rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className={`w-full pl-10 pr-3.5 py-3 text-sm rounded-xl bg-slate-50 dark:bg-slate-900/80 border text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all ${
+                fieldErrors.email
+                  ? 'border-red-400 dark:border-red-500/80 focus:ring-red-500'
+                  : 'border-slate-200 dark:border-slate-800'
+              }`}
             />
           </div>
           {fieldErrors.email && (
@@ -147,51 +214,23 @@ export const LoginForm: React.FC = () => {
           )}
         </div>
 
-        {/* Password Field */}
-        <div>
-          <label
-            htmlFor="login-password"
-            className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5"
-          >
-            Password <span className="text-red-500">*</span>
-          </label>
-          <div className="relative">
-            <Lock className="absolute left-3.5 top-3 w-4 h-4 text-slate-400" aria-hidden="true" />
-            <input
-              ref={passwordRef}
-              id="login-password"
-              type={showPassword ? 'text' : 'password'}
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                if (fieldErrors.password) setFieldErrors((prev) => ({ ...prev, password: undefined }));
-              }}
-              placeholder="••••••••"
-              aria-invalid={Boolean(fieldErrors.password)}
-              aria-describedby={fieldErrors.password ? 'login-password-error' : undefined}
-              className="w-full pl-10 pr-10 py-2.5 text-sm rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3.5 top-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors focus:outline-none"
-              aria-label={showPassword ? 'Hide password' : 'Show password'}
-            >
-              {showPassword ? (
-                <EyeOff className="w-4 h-4" aria-hidden="true" />
-              ) : (
-                <Eye className="w-4 h-4" aria-hidden="true" />
-              )}
-            </button>
-          </div>
-          {fieldErrors.password && (
-            <p id="login-password-error" className="text-xs text-red-500 font-medium mt-1">
-              {fieldErrors.password}
-            </p>
-          )}
-        </div>
+        {/* Password */}
+        <PasswordInput
+          ref={passwordRef}
+          id="login-password"
+          label="Password"
+          required
+          value={password}
+          onChange={(e) => {
+            setPassword(e.target.value);
+            if (fieldErrors.password) setFieldErrors((prev) => ({ ...prev, password: undefined }));
+          }}
+          placeholder="Enter your password"
+          error={fieldErrors.password}
+          autoComplete="current-password"
+        />
 
-        {/* Submit Button */}
+        {/* Submit */}
         <Button
           type="submit"
           variant="primary"
@@ -200,19 +239,26 @@ export const LoginForm: React.FC = () => {
           disabled={isSubmitting}
           className="w-full font-bold bg-purple-600 hover:bg-purple-700 text-white mt-2 shadow-md shadow-purple-500/20"
         >
-          {isSubmitting ? 'Signing in...' : 'Sign In'}
+          {isSubmitting ? 'Logging in...' : 'Log in'}
         </Button>
       </form>
 
-      {/* Footer Link to Signup */}
-      <div className="text-center text-xs text-slate-600 dark:text-slate-400">
+      {/* Switcher Footer */}
+      <div className="text-center text-xs text-slate-600 dark:text-slate-400 pt-2">
         Don&apos;t have an account?{' '}
-        <Link
-          href="/signup"
-          className="font-bold text-purple-600 dark:text-purple-400 hover:underline focus:outline-none"
-        >
-          Create an account
-        </Link>
+        {onSwitchToSignup ? (
+          <button
+            type="button"
+            onClick={onSwitchToSignup}
+            className="font-bold text-purple-600 dark:text-purple-400 hover:underline focus:outline-none"
+          >
+            Create account
+          </button>
+        ) : (
+          <a href="/signup" className="font-bold text-purple-600 dark:text-purple-400 hover:underline focus:outline-none">
+            Create account
+          </a>
+        )}
       </div>
     </div>
   );

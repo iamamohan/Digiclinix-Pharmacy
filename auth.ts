@@ -41,25 +41,48 @@ export const authOptions: NextAuthOptions = {
           throw new Error('Invalid email or password.');
         }
 
+        // Email Verification Guard for Credentials Users
+        if (!user.emailVerified) {
+          throw new Error('UNVERIFIED_EMAIL');
+        }
+
         return {
           id: user.id,
           name: user.name,
           email: user.email,
           image: user.image,
+          // role is NOT returned from authorize; it is loaded from the DB in the jwt callback
         };
       },
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
+      // On initial sign-in, user object is present
       if (user) {
         token.id = user.id;
       }
+
+      // Always refresh role from DB on sign-in or session update
+      // This ensures role changes are reflected without requiring re-login
+      if (user || trigger === 'update') {
+        const userId = token.id as string | undefined;
+        if (userId) {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { role: true },
+          });
+          token.role = dbUser?.role ?? 'USER';
+        }
+      }
+
       return token;
     },
     async session({ session, token }) {
       if (session.user && token) {
         session.user.id = token.id as string;
+        // Safely expose role — comes from trusted JWT (which reads from DB)
+        session.user.role = (token.role as string) ?? 'USER';
       }
       return session;
     },
