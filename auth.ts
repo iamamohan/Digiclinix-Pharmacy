@@ -41,17 +41,11 @@ export const authOptions: NextAuthOptions = {
           throw new Error('Invalid email or password.');
         }
 
-        // Email Verification Guard for Credentials Users
-        if (!user.emailVerified) {
-          throw new Error('UNVERIFIED_EMAIL');
-        }
-
         return {
           id: user.id,
           name: user.name,
           email: user.email,
           image: user.image,
-          // role is NOT returned from authorize; it is loaded from the DB in the jwt callback
         };
       },
     }),

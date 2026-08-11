@@ -3,7 +3,7 @@
 import React, { useState, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
-import { Mail, AlertCircle, MailWarning, ArrowRight } from 'lucide-react';
+import { Mail, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { GoogleSignInButton } from './GoogleSignInButton';
 import { PasswordInput } from './PasswordInput';
@@ -11,13 +11,9 @@ import { useToast } from '@/components/providers/toast-provider';
 
 export interface LoginFormProps {
   onSwitchToSignup?: () => void;
-  onUnverifiedEmail?: (email: string) => void;
 }
 
-export const LoginForm: React.FC<LoginFormProps> = ({
-  onSwitchToSignup,
-  onUnverifiedEmail,
-}) => {
+export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup }) => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl') || '/account';
@@ -27,7 +23,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isUnverified, setIsUnverified] = useState(false);
 
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
 
@@ -64,7 +59,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
     setIsSubmitting(true);
     setErrorMessage(null);
-    setIsUnverified(false);
 
     const userEmail = email.trim().toLowerCase();
 
@@ -81,16 +75,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       }
 
       if (result.error) {
-        if (result.error.includes('UNVERIFIED_EMAIL')) {
-          setIsUnverified(true);
-          const msg = 'Please verify your email before signing in.';
-          setErrorMessage(msg);
-          toastError(msg);
-        } else {
-          const msg = 'Invalid email or password.';
-          setErrorMessage(msg);
-          toastError(msg);
-        }
+        const msg = 'Invalid email or password.';
+        setErrorMessage(msg);
+        toastError(msg);
         setIsSubmitting(false);
         return;
       }
@@ -103,14 +90,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       setErrorMessage(msg);
       toastError(msg);
       setIsSubmitting(false);
-    }
-  };
-
-  const handleTriggerVerification = () => {
-    if (onUnverifiedEmail) {
-      onUnverifiedEmail(email.trim().toLowerCase());
-    } else {
-      router.push(`/verify-email?email=${encodeURIComponent(email.trim().toLowerCase())}`);
     }
   };
 
@@ -142,36 +121,10 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         <div
           role="alert"
           aria-live="polite"
-          className={`p-4 rounded-xl text-xs border space-y-2.5 ${
-            isUnverified
-              ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800/60'
-              : 'bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800/60'
-          }`}
+          className="flex items-start gap-2.5 p-3.5 rounded-xl bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 text-xs font-medium border border-red-200 dark:border-red-800/60"
         >
-          <div className="flex items-start gap-2.5">
-            {isUnverified ? (
-              <MailWarning className="w-4 h-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" aria-hidden="true" />
-            ) : (
-              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
-            )}
-            <span className="font-medium">{errorMessage}</span>
-          </div>
-
-          {isUnverified && (
-            <div className="pt-2 border-t border-amber-200/80 dark:border-amber-800/50 flex items-center justify-between gap-2">
-              <span className="text-[11px] font-normal text-amber-700 dark:text-amber-400">
-                Have a 6-digit verification code?
-              </span>
-              <button
-                type="button"
-                onClick={handleTriggerVerification}
-                className="text-xs font-bold text-purple-600 dark:text-purple-400 hover:underline focus:outline-none inline-flex items-center gap-1 shrink-0"
-              >
-                <span>Enter Code</span>
-                <ArrowRight className="w-3 h-3" />
-              </button>
-            </div>
-          )}
+          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
+          <span>{errorMessage}</span>
         </div>
       )}
 

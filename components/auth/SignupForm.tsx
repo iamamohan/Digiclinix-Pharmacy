@@ -9,7 +9,7 @@ import { useToast } from '@/components/providers/toast-provider';
 
 export interface SignupFormProps {
   onSwitchToLogin?: () => void;
-  onSignupSuccess?: (email: string) => void;
+  onSignupSuccess?: () => void;
 }
 
 export const SignupForm: React.FC<SignupFormProps> = ({
@@ -111,10 +111,10 @@ export const SignupForm: React.FC<SignupFormProps> = ({
         return;
       }
 
-      toastSuccess('Account created! Please check your email for your 6-digit verification code.');
+      toastSuccess('Account created successfully! Please sign in with your email and password.');
 
       if (onSignupSuccess) {
-        onSignupSuccess(userEmail);
+        onSignupSuccess();
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'An unexpected error occurred during account creation.';
@@ -293,7 +293,7 @@ export const SignupForm: React.FC<SignupFormProps> = ({
             Log in
           </button>
         ) : (
-          <a href="/login" className="font-bold text-purple-600 dark:text-purple-400 hover:underline focus:outline-none">
+          <a href="/signup" className="font-bold text-purple-600 dark:text-purple-400 hover:underline focus:outline-none">
             Log in
           </a>
         )}

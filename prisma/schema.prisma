@@ -90,14 +90,4 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-model EmailVerificationOTP {
-  id        String   @id @default(cuid())
-  email     String
-  codeHash  String
-  expiresAt DateTime
-  attempts  Int      @default(0)
-  createdAt DateTime @default(now())
-
-  @@index([email])
-}
 
