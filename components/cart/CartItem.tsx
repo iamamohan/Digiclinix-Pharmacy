@@ -2,9 +2,10 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
-import { Plus, Minus, Trash2, FileText } from 'lucide-react';
-import { CartItem as CartItemType } from '@/components/providers/cart-provider';
+import { Plus, Minus, Trash2, FileText, AlertCircle } from 'lucide-react';
+import { CartItem as CartItemType, getAvailableStock } from '@/components/providers/cart-provider';
 import { formatCurrency } from '@/lib/utils/format';
+import { calculateDiscountedPrice } from '@/lib/utils/discount';
 import { Badge } from '@/components/ui/Badge';
 
 interface CartItemProps {
@@ -19,8 +20,12 @@ export const CartItem: React.FC<CartItemProps> = ({ item, onUpdateQuantity, onRe
   const { product, quantity } = item;
   const [imgSrc, setImgSrc] = useState(product.imageUrl || DEFAULT_IMAGE);
 
-  const priceNum = typeof product.price === 'string' ? parseFloat(product.price) : Number(product.price) || 0;
-  const itemSubtotal = priceNum * quantity;
+  const availableStock = getAvailableStock(product);
+  const isAtMaxStock = quantity >= availableStock;
+
+  const discountCalc = calculateDiscountedPrice(product.price, product.discount ?? 0);
+  const unitPrice = discountCalc.discountedPrice;
+  const itemSubtotal = unitPrice * quantity;
 
   return (
     <div className="flex items-center gap-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 transition-colors">
@@ -60,9 +65,24 @@ export const CartItem: React.FC<CartItemProps> = ({ item, onUpdateQuantity, onRe
           </div>
         )}
 
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">
-          {formatCurrency(product.price)} each
-        </p>
+        <div className="flex items-center gap-1.5 mt-1">
+          <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+            {formatCurrency(unitPrice)} each
+          </span>
+          {discountCalc.hasDiscount && (
+            <span className="text-[10px] text-slate-400 line-through">
+              {discountCalc.formattedOriginalPrice}
+            </span>
+          )}
+        </div>
+
+        {/* Max Stock Warning Notice */}
+        {isAtMaxStock && (
+          <div className="mt-1 flex items-center gap-1 text-[11px] font-medium text-amber-600 dark:text-amber-400">
+            <AlertCircle className="w-3 h-3 shrink-0" aria-hidden="true" />
+            <span>Max available stock ({availableStock}) reached</span>
+          </div>
+        )}
 
         {/* Quantity Controls & Subtotal */}
         <div className="flex items-center justify-between mt-3 pt-2 border-t border-slate-200/60 dark:border-slate-800">
@@ -75,13 +95,20 @@ export const CartItem: React.FC<CartItemProps> = ({ item, onUpdateQuantity, onRe
             >
               <Minus className="w-3 h-3" aria-hidden="true" />
             </button>
+
             <span className="w-7 text-center text-xs font-semibold text-slate-900 dark:text-white">
               {quantity}
             </span>
+
             <button
               type="button"
               onClick={() => onUpdateQuantity(product.id, quantity + 1)}
-              className="p-1 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors focus:outline-none"
+              disabled={isAtMaxStock}
+              className={`p-1 rounded transition-colors focus:outline-none ${
+                isAtMaxStock
+                  ? 'text-slate-300 dark:text-slate-600 cursor-not-allowed opacity-50'
+                  : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+              }`}
               aria-label={`Increase quantity of ${product.name}`}
             >
               <Plus className="w-3 h-3" aria-hidden="true" />

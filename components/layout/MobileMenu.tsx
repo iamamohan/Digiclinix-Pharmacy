@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
-import { X, PhoneCall, Search, ShieldCheck, Home, Package, Info, Phone, User as UserIcon, LogOut, Settings } from 'lucide-react';
+import { X, PhoneCall, Search, ShieldCheck, Home, Package, Info, Phone, User as UserIcon, LogOut, LayoutDashboard, ShoppingBag } from 'lucide-react';
 import { Logo } from './Logo';
 import { ThemeToggle } from './ThemeToggle';
 import { cn } from '@/lib/utils/cn';
@@ -152,39 +152,50 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, navLink
                   <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">{session.user.email}</p>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-2 pt-1 border-t border-purple-200/60 dark:border-slate-800">
+
+              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-purple-200/60 dark:border-slate-800">
                 <Link
                   href="/account"
                   onClick={onClose}
-                  className="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-bold bg-white dark:bg-slate-800 text-purple-700 dark:text-purple-300 border border-purple-200/80 dark:border-slate-700"
+                  className="flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 text-purple-700 dark:text-purple-300 border border-purple-200/80 dark:border-slate-700 hover:bg-purple-100 transition-colors"
                 >
                   <UserIcon className="w-3.5 h-3.5" />
                   <span>Account</span>
                 </Link>
-                <button
-                  type="button"
-                  onClick={() => {
-                    onClose();
-                    signOut({ callbackUrl: '/' });
-                  }}
-                  className="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-bold bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border border-red-200/60 dark:border-red-800/60"
+
+                <Link
+                  href="/account/orders"
+                  onClick={onClose}
+                  className="flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 text-purple-700 dark:text-purple-300 border border-purple-200/80 dark:border-slate-700 hover:bg-purple-100 transition-colors"
                 >
-                  <LogOut className="w-3.5 h-3.5" />
-                  <span>Log Out</span>
-                </button>
+                  <ShoppingBag className="w-3.5 h-3.5" />
+                  <span>My Orders</span>
+                </Link>
               </div>
 
-              {/* Product Management link — ADMIN only */}
+              {/* Admin Dashboard link — ADMIN only */}
               {session.user.role === 'ADMIN' && (
                 <Link
-                  href="/products"
+                  href="/admin"
                   onClick={onClose}
-                  className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-bold bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200/60 dark:border-purple-800/60 mt-1"
+                  className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-extrabold bg-purple-600 text-white shadow-xs hover:bg-purple-700 transition-colors w-full mt-1"
                 >
-                  <Settings className="w-3.5 h-3.5" />
-                  <span>Product Management</span>
+                  <LayoutDashboard className="w-4 h-4 shrink-0" />
+                  <span>Admin Dashboard</span>
                 </Link>
               )}
+
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  signOut({ callbackUrl: '/' });
+                }}
+                className="w-full flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-xl text-xs font-bold bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border border-red-200/60 dark:border-red-800/60 transition-colors mt-1"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>Log Out</span>
+              </button>
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-2.5">

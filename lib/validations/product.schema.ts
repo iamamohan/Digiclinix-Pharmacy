@@ -25,6 +25,16 @@ export const getProductsQuerySchema = z.object({
     if (val === 'false') return false;
     return undefined;
   }, z.boolean().optional()),
+  isFeatured: z.preprocess((val) => {
+    if (val === 'true') return true;
+    if (val === 'false') return false;
+    return undefined;
+  }, z.boolean().optional()),
+  isActive: z.preprocess((val) => {
+    if (val === 'true') return true;
+    if (val === 'false') return false;
+    return undefined;
+  }, z.boolean().optional()),
   sortBy: z.enum(['createdAt', 'price', 'name']).default(DEFAULT_SORT_BY),
   sortOrder: z.enum(['asc', 'desc']).default(DEFAULT_SORT_ORDER),
 });
@@ -47,6 +57,25 @@ export const createProductSchema = z.object({
   imagePublicId: z.string().trim().optional(),
   inStock: z.boolean().default(true),
   requiresPrescription: z.boolean().default(false),
+
+  // Phase 10A Inventory Fields
+  stockQuantity: z.coerce
+    .number()
+    .int('Stock quantity must be an integer')
+    .min(0, 'Stock quantity cannot be negative')
+    .default(0),
+  lowStockThreshold: z.coerce
+    .number()
+    .int('Low stock threshold must be an integer')
+    .min(0, 'Low stock threshold cannot be negative')
+    .default(5),
+  discount: z.coerce
+    .number()
+    .min(0, 'Discount cannot be negative')
+    .max(100, 'Discount cannot exceed 100%')
+    .default(0),
+  isFeatured: z.boolean().default(false),
+  isActive: z.boolean().default(true),
 });
 
 export const updateProductSchema = createProductSchema.partial();

@@ -6,8 +6,10 @@ import { SerializedProduct } from '@/types/product';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { formatCurrency } from '@/lib/utils/format';
+import { getStockStatusBadgeInfo } from '@/lib/utils/inventory';
+import { calculateDiscountedPrice } from '@/lib/utils/discount';
 import { cn } from '@/lib/utils/cn';
-import { CheckCircle2, XCircle, FileText, ArrowRight, Pencil, Trash2, ShoppingBag, Check } from 'lucide-react';
+import { FileText, Pencil, Trash2, ShoppingBag, Check, Sparkles, EyeOff } from 'lucide-react';
 import { useCart } from '@/components/providers/cart-provider';
 import { useToast } from '@/components/providers/toast-provider';
 
@@ -63,13 +65,24 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const { addItem } = useCart();
   const { success } = useToast();
 
+  const isAdminView = Boolean(onEdit || onDelete);
+
+  // Derived stock status metadata
+  const stockInfo = getStockStatusBadgeInfo(
+    product.stockQuantity ?? (product.inStock ? 10 : 0),
+    product.lowStockThreshold ?? 5
+  );
+
+  // Derived discount pricing (does NOT modify DB price)
+  const discountCalc = calculateDiscountedPrice(product.price, product.discount ?? 0);
+
   const handleCardClick = () => {
     if (onViewDetails) onViewDetails(product);
   };
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!product.inStock) return;
+    if (!product.inStock || stockInfo.status === 'OUT_OF_STOCK') return;
     addItem(product);
     setIsAdding(true);
     success(`✓ ${product.name} added to your cart`);
@@ -79,7 +92,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   return (
     <div
       className={cn(
-        'group p-5 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200/80 dark:border-slate-800/80 shadow-soft hover:shadow-xl hover:border-purple-500/30 dark:hover:border-purple-500/30 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between h-full select-none',
+        'group p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200/80 dark:border-slate-800/80 shadow-soft hover:shadow-xl hover:border-purple-500/30 dark:hover:border-purple-500/30 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between h-full select-none relative',
+        !product.isActive && isAdminView && 'opacity-75 bg-slate-50/80 dark:bg-slate-900/40',
         className
       )}
     >
@@ -87,7 +101,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         {/* Product Image Container */}
         <div
           onClick={handleCardClick}
-          className="relative w-full h-48 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-900 mb-4 border border-slate-100 dark:border-slate-800/60 cursor-pointer"
+          className="relative w-full h-44 sm:h-48 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-900 mb-3.5 border border-slate-100 dark:border-slate-800/60 cursor-pointer"
         >
           <Image
             src={imgSrc}
@@ -99,18 +113,41 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             onError={() => setImgSrc('/images/products/paracetamol.png')}
           />
 
-          {/* Prescription Badge Overlay */}
-          {product.requiresPrescription && (
-            <div className="absolute top-2.5 left-2.5 z-10">
+          {/* Top Left Badges: Rx, Featured, Inactive */}
+          <div className="absolute top-2.5 left-2.5 z-10 flex flex-col gap-1 items-start">
+            {product.requiresPrescription && (
               <Badge variant="warning" size="sm">
                 <FileText className="w-3 h-3 shrink-0" aria-hidden="true" />
                 <span>Rx Required</span>
               </Badge>
+            )}
+
+            {product.isFeatured && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider bg-amber-500 text-white px-2 py-0.5 rounded-md shadow-xs">
+                <Sparkles className="w-3 h-3 shrink-0" aria-hidden="true" />
+                <span>Featured</span>
+              </span>
+            )}
+
+            {isAdminView && !product.isActive && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider bg-slate-700 text-white px-2 py-0.5 rounded-md shadow-xs">
+                <EyeOff className="w-3 h-3 shrink-0" aria-hidden="true" />
+                <span>Inactive</span>
+              </span>
+            )}
+          </div>
+
+          {/* Discount Badge Overlay (Bottom Right of Image) */}
+          {discountCalc.hasDiscount && (
+            <div className="absolute bottom-2.5 right-2.5 z-10">
+              <span className="inline-flex items-center text-[10px] font-extrabold bg-purple-600 text-white px-2 py-0.5 rounded-md shadow-md">
+                {discountCalc.discountPercent}% OFF
+              </span>
             </div>
           )}
 
-          {/* Action Overlay Buttons (Edit & Delete) */}
-          {(onEdit || onDelete) && (
+          {/* Admin Action Overlay Buttons (Edit & Delete) */}
+          {isAdminView && (
             <div className="absolute top-2.5 right-2.5 z-10 flex items-center gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity">
               {onEdit && (
                 <button
@@ -143,30 +180,28 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           )}
         </div>
 
-        {/* Category Tag & Stock Status */}
-        <div className="flex items-center justify-between gap-2 mb-2">
-          <span className="text-xs font-semibold uppercase tracking-wider text-purple-700 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/60 px-2.5 py-0.5 rounded-md border border-purple-200/50 dark:border-purple-800/50 truncate max-w-[60%]">
+        {/* Category Tag & Stock Status Badge Row (Strict Single Line & No Text Wrapping) */}
+        <div className="flex items-center justify-between gap-1.5 mb-2">
+          <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-purple-700 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/60 px-2 py-0.5 rounded-md border border-purple-200/50 dark:border-purple-800/50 truncate shrink min-w-0">
             {product.category}
           </span>
 
-          {product.inStock ? (
-            <Badge variant="success" size="sm">
-              <CheckCircle2 className="w-3 h-3 shrink-0" aria-hidden="true" />
-              <span>In Stock</span>
-            </Badge>
-          ) : (
-            <Badge variant="danger" size="sm">
-              <XCircle className="w-3 h-3 shrink-0" aria-hidden="true" />
-              <span>Out of Stock</span>
-            </Badge>
-          )}
+          <span
+            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[11px] font-bold whitespace-nowrap shrink-0 ${stockInfo.badgeColorClass}`}
+          >
+            <span className="text-[9px]">●</span>
+            <span>{stockInfo.label}</span>
+            {isAdminView && product.stockQuantity !== undefined && (
+              <span className="opacity-90 font-semibold">({product.stockQuantity})</span>
+            )}
+          </span>
         </div>
 
         {/* Product Title */}
         <button
           type="button"
           onClick={handleCardClick}
-          className="text-left w-full group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors focus:outline-none focus:underline"
+          className="text-left w-full group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors focus:outline-none focus:underline mt-1"
         >
           <h3 className="text-base font-bold text-slate-900 dark:text-white font-manrope line-clamp-1 leading-snug">
             {product.name}
@@ -174,29 +209,37 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         </button>
 
         {/* Description Snippet */}
-        {product.description && (
-          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 line-clamp-2 leading-relaxed">
-            {product.description}
-          </p>
-        )}
+        <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 line-clamp-2 leading-relaxed min-h-[2.25rem]">
+          {product.description || 'Quality pharmaceutical healthcare product.'}
+        </p>
       </div>
 
-      {/* Footer: Price & CTA Actions */}
-      <div className="pt-4 mt-4 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-2">
-        <div>
-          <span className="text-xs text-slate-500 dark:text-slate-400 block font-medium">Price</span>
-          <span className="text-lg font-extrabold text-slate-900 dark:text-white font-manrope">
-            {formatCurrency(product.price)}
-          </span>
+      {/* Footer: Clean Price & Action Buttons */}
+      <div className="pt-3.5 mt-3.5 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-2">
+        <div className="flex flex-col justify-center min-w-0">
+          {discountCalc.hasDiscount ? (
+            <div className="flex items-baseline gap-1.5 flex-wrap">
+              <span className="text-base sm:text-lg font-extrabold text-purple-600 dark:text-purple-400 font-manrope whitespace-nowrap">
+                {discountCalc.formattedDiscountedPrice}
+              </span>
+              <span className="text-xs text-slate-400 line-through whitespace-nowrap">
+                {discountCalc.formattedOriginalPrice}
+              </span>
+            </div>
+          ) : (
+            <span className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white font-manrope whitespace-nowrap">
+              {formatCurrency(product.price)}
+            </span>
+          )}
         </div>
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 shrink-0">
           {onViewDetails && (
             <Button
               variant="ghost"
               size="sm"
               onClick={handleCardClick}
-              className="text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 px-2"
+              className="text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 px-2 py-1.5 shrink-0"
               aria-label={`View details for ${product.name}`}
             >
               View
@@ -206,7 +249,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           <Button
             variant="primary"
             size="sm"
-            disabled={!product.inStock || isAdding}
+            disabled={!product.inStock || stockInfo.status === 'OUT_OF_STOCK' || isAdding}
             onClick={handleAddToCart}
             leftIcon={
               isAdding ? (
@@ -216,7 +259,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               )
             }
             className={cn(
-              'transition-all duration-200 text-xs px-3 font-semibold shadow-xs',
+              'transition-all duration-200 text-xs px-3 py-1.5 font-semibold shadow-xs whitespace-nowrap shrink-0',
               isAdding
                 ? 'bg-emerald-600 hover:bg-emerald-700 text-white scale-105'
                 : 'bg-purple-600 hover:bg-purple-700 text-white'

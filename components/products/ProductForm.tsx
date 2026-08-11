@@ -4,6 +4,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ProductFormData } from '@/types/product';
 import { Button } from '@/components/ui/Button';
 import { ProductImageUpload } from './ProductImageUpload';
+import { getStockStatusBadgeInfo } from '@/lib/utils/inventory';
+import { calculateDiscountedPrice } from '@/lib/utils/discount';
+import { Sparkles, Eye, EyeOff } from 'lucide-react';
 
 export interface ProductFormProps {
   initialValues?: Partial<ProductFormData>;
@@ -17,6 +20,9 @@ interface FormErrors {
   name?: string;
   category?: string;
   price?: string;
+  stockQuantity?: string;
+  lowStockThreshold?: string;
+  discount?: string;
 }
 
 export const ProductForm: React.FC<ProductFormProps> = ({
@@ -35,12 +41,30 @@ export const ProductForm: React.FC<ProductFormProps> = ({
   const [inStock, setInStock] = useState(initialValues?.inStock ?? true);
   const [requiresPrescription, setRequiresPrescription] = useState(initialValues?.requiresPrescription ?? false);
 
+  // Phase 10B Inventory & Pricing Form State
+  const [stockQuantity, setStockQuantity] = useState<string>(
+    initialValues?.stockQuantity !== undefined
+      ? String(initialValues.stockQuantity)
+      : initialValues?.inStock === false
+      ? '0'
+      : '10'
+  );
+  const [lowStockThreshold, setLowStockThreshold] = useState<string>(
+    initialValues?.lowStockThreshold !== undefined ? String(initialValues.lowStockThreshold) : '5'
+  );
+  const [discount, setDiscount] = useState<string>(
+    initialValues?.discount !== undefined ? String(initialValues.discount) : '0'
+  );
+  const [isFeatured, setIsFeatured] = useState<boolean>(initialValues?.isFeatured ?? false);
+  const [isActive, setIsActive] = useState<boolean>(initialValues?.isActive ?? true);
+
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [errors, setErrors] = useState<FormErrors>({});
 
   const nameInputRef = useRef<HTMLInputElement>(null);
   const categoryInputRef = useRef<HTMLInputElement>(null);
   const priceInputRef = useRef<HTMLInputElement>(null);
+  const stockQuantityRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (initialValues) {
@@ -52,8 +76,31 @@ export const ProductForm: React.FC<ProductFormProps> = ({
       setImagePublicId(initialValues.imagePublicId || undefined);
       setInStock(initialValues.inStock ?? true);
       setRequiresPrescription(initialValues.requiresPrescription ?? false);
+      setStockQuantity(
+        initialValues.stockQuantity !== undefined
+          ? String(initialValues.stockQuantity)
+          : initialValues.inStock === false
+          ? '0'
+          : '10'
+      );
+      setLowStockThreshold(
+        initialValues.lowStockThreshold !== undefined ? String(initialValues.lowStockThreshold) : '5'
+      );
+      setDiscount(initialValues.discount !== undefined ? String(initialValues.discount) : '0');
+      setIsFeatured(initialValues.isFeatured ?? false);
+      setIsActive(initialValues.isActive ?? true);
     }
   }, [initialValues]);
+
+  // Derived stock status badge preview
+  const numStock = parseInt(stockQuantity, 10);
+  const numThresh = parseInt(lowStockThreshold, 10);
+  const safeStock = isNaN(numStock) ? 0 : numStock;
+  const safeThresh = isNaN(numThresh) ? 5 : numThresh;
+  const stockBadge = getStockStatusBadgeInfo(safeStock, safeThresh);
+
+  // Derived discount preview calculation
+  const discountCalc = calculateDiscountedPrice(price || 0, discount || 0);
 
   const validate = (): boolean => {
     const newErrors: FormErrors = {};
@@ -75,6 +122,25 @@ export const ProductForm: React.FC<ProductFormProps> = ({
       newErrors.price = 'Price must be greater than 0';
     }
 
+    const parsedStock = parseInt(stockQuantity, 10);
+    if (stockQuantity === '' || isNaN(parsedStock)) {
+      newErrors.stockQuantity = 'Stock quantity must be an integer';
+    } else if (parsedStock < 0) {
+      newErrors.stockQuantity = 'Stock quantity cannot be negative';
+    }
+
+    const parsedThresh = parseInt(lowStockThreshold, 10);
+    if (lowStockThreshold === '' || isNaN(parsedThresh)) {
+      newErrors.lowStockThreshold = 'Low stock threshold must be an integer';
+    } else if (parsedThresh < 0) {
+      newErrors.lowStockThreshold = 'Low stock threshold cannot be negative';
+    }
+
+    const parsedDiscount = parseFloat(discount);
+    if (discount !== '' && (isNaN(parsedDiscount) || parsedDiscount < 0 || parsedDiscount > 100)) {
+      newErrors.discount = 'Discount must be between 0 and 100%';
+    }
+
     setErrors(newErrors);
 
     if (newErrors.name) {
@@ -83,6 +149,8 @@ export const ProductForm: React.FC<ProductFormProps> = ({
       categoryInputRef.current?.focus();
     } else if (newErrors.price) {
       priceInputRef.current?.focus();
+    } else if (newErrors.stockQuantity) {
+      stockQuantityRef.current?.focus();
     }
 
     return Object.keys(newErrors).length === 0;
@@ -92,6 +160,8 @@ export const ProductForm: React.FC<ProductFormProps> = ({
     e.preventDefault();
     if (!validate() || isUploading) return;
 
+    const parsedStock = parseInt(stockQuantity, 10);
+
     const data: ProductFormData = {
       name: name.trim(),
       category: category.trim(),
@@ -99,8 +169,13 @@ export const ProductForm: React.FC<ProductFormProps> = ({
       description: description.trim() || undefined,
       imageUrl: imageUrl || undefined,
       imagePublicId: imagePublicId || undefined,
-      inStock,
+      inStock: inStock && parsedStock > 0,
       requiresPrescription,
+      stockQuantity: parsedStock,
+      lowStockThreshold: parseInt(lowStockThreshold, 10),
+      discount: parseFloat(discount) || 0,
+      isFeatured,
+      isActive,
     };
 
     await onSubmit(data);
@@ -160,7 +235,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
             htmlFor="product-form-price"
             className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5"
           >
-            Price ($) <span className="text-red-500">*</span>
+            Base Price ($) <span className="text-red-500">*</span>
           </label>
           <input
             ref={priceInputRef}
@@ -216,8 +291,157 @@ export const ProductForm: React.FC<ProductFormProps> = ({
         disabled={isSubmitting}
       />
 
+      {/* Phase 10B: Inventory & Pricing Management Section */}
+      <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-800/60 pb-2.5">
+          <span className="text-xs font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400">
+            Inventory & Pricing Controls
+          </span>
+
+          {/* Stock Status Preview Badge */}
+          <div className="flex items-center gap-1.5 text-xs font-semibold">
+            <span className="text-slate-500 dark:text-slate-400">Status Preview:</span>
+            <span
+              className={`px-2.5 py-0.5 rounded-full border text-[11px] font-bold ${stockBadge.badgeColorClass}`}
+            >
+              ● {stockBadge.label}
+            </span>
+          </div>
+        </div>
+
+        {/* Stock Quantity, Threshold & Discount (3 Columns) */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+          {/* Stock Quantity */}
+          <div>
+            <label
+              htmlFor="product-form-stock-quantity"
+              className="block text-[11px] font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1"
+            >
+              Stock Quantity
+            </label>
+            <input
+              ref={stockQuantityRef}
+              id="product-form-stock-quantity"
+              type="number"
+              min="0"
+              step="1"
+              inputMode="numeric"
+              value={stockQuantity}
+              onChange={(e) => {
+                setStockQuantity(e.target.value);
+                if (errors.stockQuantity) setErrors((prev) => ({ ...prev, stockQuantity: undefined }));
+              }}
+              placeholder="e.g. 10"
+              className="w-full px-3 py-2 text-sm rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            />
+            {errors.stockQuantity && (
+              <p className="text-[11px] text-red-500 mt-0.5 font-medium">{errors.stockQuantity}</p>
+            )}
+          </div>
+
+          {/* Low Stock Threshold */}
+          <div>
+            <label
+              htmlFor="product-form-low-threshold"
+              className="block text-[11px] font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1"
+            >
+              Low Stock Threshold
+            </label>
+            <input
+              id="product-form-low-threshold"
+              type="number"
+              min="0"
+              step="1"
+              inputMode="numeric"
+              value={lowStockThreshold}
+              onChange={(e) => {
+                setLowStockThreshold(e.target.value);
+                if (errors.lowStockThreshold) setErrors((prev) => ({ ...prev, lowStockThreshold: undefined }));
+              }}
+              placeholder="e.g. 5"
+              className="w-full px-3 py-2 text-sm rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            />
+            {errors.lowStockThreshold && (
+              <p className="text-[11px] text-red-500 mt-0.5 font-medium">{errors.lowStockThreshold}</p>
+            )}
+          </div>
+
+          {/* Discount Percentage */}
+          <div>
+            <label
+              htmlFor="product-form-discount"
+              className="block text-[11px] font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1"
+            >
+              Discount (%)
+            </label>
+            <input
+              id="product-form-discount"
+              type="number"
+              min="0"
+              max="100"
+              step="0.1"
+              inputMode="decimal"
+              value={discount}
+              onChange={(e) => {
+                setDiscount(e.target.value);
+                if (errors.discount) setErrors((prev) => ({ ...prev, discount: undefined }));
+              }}
+              placeholder="e.g. 15"
+              className="w-full px-3 py-2 text-sm rounded-xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            />
+            {errors.discount && <p className="text-[11px] text-red-500 mt-0.5 font-medium">{errors.discount}</p>}
+          </div>
+        </div>
+
+        {/* Discount Live Calculation Preview */}
+        {discountCalc.hasDiscount && (
+          <div className="p-2.5 rounded-xl bg-purple-50/80 dark:bg-purple-950/40 border border-purple-200/60 dark:border-purple-800/60 text-xs flex items-center justify-between text-purple-900 dark:text-purple-200">
+            <span>
+              Price Preview: <span className="line-through text-slate-400">{discountCalc.formattedOriginalPrice}</span>{' '}
+              <span className="font-extrabold text-purple-600 dark:text-purple-400">{discountCalc.formattedDiscountedPrice}</span>
+            </span>
+            <span className="font-bold bg-purple-600 text-white px-2 py-0.5 rounded-md text-[10px]">
+              {discountCalc.discountPercent}% OFF (Save {discountCalc.formattedSavingsAmount})
+            </span>
+          </div>
+        )}
+
+        {/* Switches: Featured & Active */}
+        <div className="pt-2 flex flex-wrap items-center gap-5 border-t border-slate-200/60 dark:border-slate-800/60">
+          <label className="inline-flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={isFeatured}
+              onChange={(e) => setIsFeatured(e.target.checked)}
+              className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 border-slate-300 dark:border-slate-700"
+            />
+            <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1">
+              <Sparkles className="w-3.5 h-3.5 text-amber-500" aria-hidden="true" />
+              Featured Product
+            </span>
+          </label>
+
+          <label className="inline-flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={isActive}
+              onChange={(e) => setIsActive(e.target.checked)}
+              className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 border-slate-300 dark:border-slate-700"
+            />
+            <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1">
+              {isActive ? (
+                <Eye className="w-3.5 h-3.5 text-emerald-500" aria-hidden="true" />
+              ) : (
+                <EyeOff className="w-3.5 h-3.5 text-slate-400" aria-hidden="true" />
+              )}
+              Active Product
+            </span>
+          </label>
+        </div>
+      </div>
+
       {/* Toggles: In Stock & Rx Required */}
-      <div className="pt-2 flex flex-col sm:flex-row gap-4 sm:items-center">
+      <div className="pt-1 flex flex-col sm:flex-row gap-4 sm:items-center">
         <label className="inline-flex items-center gap-2.5 cursor-pointer">
           <input
             type="checkbox"
@@ -225,7 +449,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
             onChange={(e) => setInStock(e.target.checked)}
             className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 border-slate-300 dark:border-slate-700"
           />
-          <span className="text-sm font-medium text-slate-800 dark:text-slate-200">In Stock</span>
+          <span className="text-sm font-medium text-slate-800 dark:text-slate-200">In Stock (Legacy Sync)</span>
         </label>
 
         <label className="inline-flex items-center gap-2.5 cursor-pointer">

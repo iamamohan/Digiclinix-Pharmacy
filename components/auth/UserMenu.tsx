@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { signOut } from 'next-auth/react';
-import { User as UserIcon, LogOut, ChevronDown, Settings } from 'lucide-react';
+import { User as UserIcon, LogOut, ChevronDown, LayoutDashboard, ShoppingBag } from 'lucide-react';
 import { useToast } from '@/components/providers/toast-provider';
 
 export interface UserMenuProps {
@@ -116,22 +116,31 @@ export const UserMenu: React.FC<UserMenuProps> = ({ user, role }) => {
               <span>My Account</span>
             </Link>
 
-            {/* Product Management — ADMIN only */}
+            <Link
+              href="/account/orders"
+              onClick={() => setIsOpen(false)}
+              className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-purple-50 dark:hover:bg-purple-950/40 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
+            >
+              <ShoppingBag className="w-4 h-4 shrink-0 text-slate-400" aria-hidden="true" />
+              <span>My Orders</span>
+            </Link>
+
+            {/* Admin Dashboard — ADMIN only */}
             {role === 'ADMIN' && (
               <Link
-                href="/products"
+                href="/admin"
                 onClick={() => setIsOpen(false)}
-                className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-950/40 transition-colors"
+                className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/50 hover:bg-purple-100 dark:hover:bg-purple-900/60 transition-colors"
               >
-                <Settings className="w-4 h-4 shrink-0 text-purple-500" aria-hidden="true" />
-                <span>Product Management</span>
+                <LayoutDashboard className="w-4 h-4 shrink-0 text-purple-600 dark:text-purple-400" aria-hidden="true" />
+                <span>Admin Dashboard</span>
               </Link>
             )}
 
             <button
               type="button"
               onClick={handleLogout}
-              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors mt-1 border-t border-slate-100 dark:border-slate-800/80"
             >
               <LogOut className="w-4 h-4 shrink-0" aria-hidden="true" />
               <span>Log Out</span>

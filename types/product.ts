@@ -1,7 +1,8 @@
 import { Product } from '@prisma/client';
 
-export type SerializedProduct = Omit<Product, 'price'> & {
+export type SerializedProduct = Omit<Product, 'price' | 'discount'> & {
   price: string;
+  discount: string;
 };
 
 export interface ProductFormData {
@@ -13,5 +14,9 @@ export interface ProductFormData {
   imagePublicId?: string;
   inStock: boolean;
   requiresPrescription: boolean;
+  stockQuantity?: number;
+  lowStockThreshold?: number;
+  discount?: number | string;
+  isFeatured?: boolean;
+  isActive?: boolean;
 }
-

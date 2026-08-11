@@ -8,6 +8,7 @@ function serializeProduct(product: Prisma.ProductGetPayload<{}>) {
   return {
     ...product,
     price: product.price.toString(),
+    discount: product.discount ? product.discount.toString() : '0',
   };
 }
 
@@ -23,6 +24,11 @@ const FALLBACK_PRODUCTS = [
     imagePublicId: null,
     inStock: true,
     requiresPrescription: false,
+    stockQuantity: 10,
+    lowStockThreshold: 5,
+    discount: '0',
+    isFeatured: false,
+    isActive: true,
     createdAt: new Date(),
     updatedAt: new Date(),
   },
@@ -37,6 +43,11 @@ const FALLBACK_PRODUCTS = [
     imagePublicId: null,
     inStock: true,
     requiresPrescription: true,
+    stockQuantity: 10,
+    lowStockThreshold: 5,
+    discount: '0',
+    isFeatured: false,
+    isActive: true,
     createdAt: new Date(),
     updatedAt: new Date(),
   },
@@ -51,6 +62,11 @@ const FALLBACK_PRODUCTS = [
     imagePublicId: null,
     inStock: true,
     requiresPrescription: false,
+    stockQuantity: 10,
+    lowStockThreshold: 5,
+    discount: '0',
+    isFeatured: false,
+    isActive: true,
     createdAt: new Date(),
     updatedAt: new Date(),
   },
@@ -65,6 +81,11 @@ const FALLBACK_PRODUCTS = [
     imagePublicId: null,
     inStock: true,
     requiresPrescription: true,
+    stockQuantity: 10,
+    lowStockThreshold: 5,
+    discount: '0',
+    isFeatured: false,
+    isActive: true,
     createdAt: new Date(),
     updatedAt: new Date(),
   },
@@ -72,7 +93,18 @@ const FALLBACK_PRODUCTS = [
 
 export const productService = {
   async list(params: GetProductsQueryInput) {
-    const { page, pageSize, search, category, inStock, requiresPrescription, sortBy, sortOrder } = params;
+    const {
+      page,
+      pageSize,
+      search,
+      category,
+      inStock,
+      requiresPrescription,
+      isFeatured,
+      isActive,
+      sortBy,
+      sortOrder,
+    } = params;
     const skip = (page - 1) * pageSize;
 
     const where: Prisma.ProductWhereInput = {};
@@ -87,6 +119,8 @@ export const productService = {
     if (category) where.category = { equals: category, mode: 'insensitive' };
     if (inStock !== undefined) where.inStock = inStock;
     if (requiresPrescription !== undefined) where.requiresPrescription = requiresPrescription;
+    if (isFeatured !== undefined) where.isFeatured = isFeatured;
+    if (isActive !== undefined) where.isActive = isActive;
 
     try {
       const [totalItems, rawProducts] = await prisma.$transaction([
@@ -149,7 +183,6 @@ export const productService = {
       return baseSlug;
     }
 
-    // Explicit Slug Collision Strategy: Append short random hex suffix (4 chars)
     const suffix = Math.random().toString(36).substring(2, 6);
     return `${baseSlug}-${suffix}`;
   },
@@ -157,10 +190,14 @@ export const productService = {
   async create(data: CreateProductInput) {
     const slug = await this.generateUniqueSlug(data.name, data.slug);
 
+    // Harmonize inStock with stockQuantity if inStock is not explicitly provided
+    const inStock = data.inStock !== undefined ? data.inStock : (data.stockQuantity ?? 0) > 0;
+
     const product = await prisma.product.create({
       data: {
         ...data,
         slug,
+        inStock,
       },
     });
 
@@ -178,15 +215,21 @@ export const productService = {
       slug = await this.generateUniqueSlug(existingProduct.name, data.slug);
     }
 
+    // Harmonize inStock if stockQuantity is updated without explicit inStock
+    let inStock = data.inStock;
+    if (inStock === undefined && data.stockQuantity !== undefined) {
+      inStock = data.stockQuantity > 0;
+    }
+
     const updatedProduct = await prisma.product.update({
       where: { id },
       data: {
         ...data,
         ...(slug && { slug }),
+        ...(inStock !== undefined && { inStock }),
       },
     });
 
-    // Post-commit cleanup: If the database update succeeded AND a new image replaces an old Cloudinary image
     const oldPublicId = existingProduct.imagePublicId;
     const newPublicId = data.imagePublicId;
 
@@ -205,10 +248,8 @@ export const productService = {
     const existingProduct = await prisma.product.findUnique({ where: { id } });
     if (!existingProduct) return false;
 
-    // Database deletion first
     await prisma.product.delete({ where: { id } });
 
-    // Post-commit cleanup: If DB deletion succeeded and Cloudinary public ID exists, clean up asset
     if (existingProduct.imagePublicId) {
       try {
         await deleteCloudinaryAsset(existingProduct.imagePublicId);
@@ -220,4 +261,3 @@ export const productService = {
     return true;
   },
 };
-
