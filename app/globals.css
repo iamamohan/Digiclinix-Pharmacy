@@ -91,3 +91,57 @@
 .dark ::-webkit-scrollbar-thumb:hover {
   background-color: #334155;
 }
+
+/* ── Hero Carousel Heights ── */
+.hero-carousel {
+  min-height: 560px;
+}
+
+.hero-content-wrapper {
+  min-height: 560px;
+  padding-top: 3rem;
+  padding-bottom: 4rem;
+}
+
+@media (min-width: 640px) {
+  .hero-carousel {
+    min-height: 600px;
+  }
+  .hero-content-wrapper {
+    min-height: 600px;
+    padding-top: 3.5rem;
+    padding-bottom: 4.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .hero-carousel {
+    min-height: 640px;
+  }
+  .hero-content-wrapper {
+    min-height: 640px;
+    padding-top: 4rem;
+    padding-bottom: 5rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .hero-carousel {
+    min-height: 660px;
+  }
+  .hero-content-wrapper {
+    min-height: 660px;
+    padding-top: 4rem;
+    padding-bottom: 5rem;
+  }
+}
+
+@media (min-width: 1536px) {
+  .hero-carousel {
+    min-height: 680px;
+  }
+  .hero-content-wrapper {
+    min-height: 680px;
+  }
+}
+
