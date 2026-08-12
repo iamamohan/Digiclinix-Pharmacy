@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ProductFormData } from '@/types/product';
 import { Button } from '@/components/ui/Button';
 import { ProductImageUpload } from './ProductImageUpload';
+import { ProductSEOForm } from '@/components/admin/ProductSEOForm';
 import { getStockStatusBadgeInfo } from '@/lib/utils/inventory';
 import { calculateDiscountedPrice } from '@/lib/utils/discount';
 import { Sparkles, Eye, EyeOff } from 'lucide-react';
@@ -58,6 +59,13 @@ export const ProductForm: React.FC<ProductFormProps> = ({
   const [isFeatured, setIsFeatured] = useState<boolean>(initialValues?.isFeatured ?? false);
   const [isActive, setIsActive] = useState<boolean>(initialValues?.isActive ?? true);
 
+  // Phase 10E Medical & SEO Form State
+  const [uses, setUses] = useState(initialValues?.uses || '');
+  const [warnings, setWarnings] = useState(initialValues?.warnings || '');
+  const [seoTitle, setSeoTitle] = useState(initialValues?.seoTitle || '');
+  const [seoDescription, setSeoDescription] = useState(initialValues?.seoDescription || '');
+  const [seoKeywords, setSeoKeywords] = useState(initialValues?.seoKeywords || '');
+
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [errors, setErrors] = useState<FormErrors>({});
 
@@ -89,6 +97,11 @@ export const ProductForm: React.FC<ProductFormProps> = ({
       setDiscount(initialValues.discount !== undefined ? String(initialValues.discount) : '0');
       setIsFeatured(initialValues.isFeatured ?? false);
       setIsActive(initialValues.isActive ?? true);
+      setUses(initialValues.uses || '');
+      setWarnings(initialValues.warnings || '');
+      setSeoTitle(initialValues.seoTitle || '');
+      setSeoDescription(initialValues.seoDescription || '');
+      setSeoKeywords(initialValues.seoKeywords || '');
     }
   }, [initialValues]);
 
@@ -156,6 +169,26 @@ export const ProductForm: React.FC<ProductFormProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
+  const handleSEOChange = (field: string, value: string) => {
+    switch (field) {
+      case 'uses':
+        setUses(value);
+        break;
+      case 'warnings':
+        setWarnings(value);
+        break;
+      case 'seoTitle':
+        setSeoTitle(value);
+        break;
+      case 'seoDescription':
+        setSeoDescription(value);
+        break;
+      case 'seoKeywords':
+        setSeoKeywords(value);
+        break;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate() || isUploading) return;
@@ -176,6 +209,11 @@ export const ProductForm: React.FC<ProductFormProps> = ({
       discount: parseFloat(discount) || 0,
       isFeatured,
       isActive,
+      uses: uses.trim() || undefined,
+      warnings: warnings.trim() || undefined,
+      seoTitle: seoTitle.trim() || undefined,
+      seoDescription: seoDescription.trim() || undefined,
+      seoKeywords: seoKeywords.trim() || undefined,
     };
 
     await onSubmit(data);
@@ -235,7 +273,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
             htmlFor="product-form-price"
             className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5"
           >
-            Base Price ($) <span className="text-red-500">*</span>
+            Base Price (₹ / Base) <span className="text-red-500">*</span>
           </label>
           <input
             ref={priceInputRef}
@@ -464,6 +502,18 @@ export const ProductForm: React.FC<ProductFormProps> = ({
           </span>
         </label>
       </div>
+
+      {/* Phase 10E Medical Information & SEO Form with Live Google Preview */}
+      <ProductSEOForm
+        productName={name}
+        slug={initialValues?.name === name ? undefined : name}
+        uses={uses}
+        warnings={warnings}
+        seoTitle={seoTitle}
+        seoDescription={seoDescription}
+        seoKeywords={seoKeywords}
+        onChange={handleSEOChange}
+      />
 
       {/* Form Buttons */}
       <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100 dark:border-slate-800">

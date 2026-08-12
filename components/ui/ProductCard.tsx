@@ -2,11 +2,12 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { SerializedProduct } from '@/types/product';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { formatCurrency } from '@/lib/utils/format';
-import { getStockStatusBadgeInfo } from '@/lib/utils/inventory';
+import { getStockStatusBadgeInfo, getCustomerStockStatusBadgeInfo } from '@/lib/utils/inventory';
 import { calculateDiscountedPrice } from '@/lib/utils/discount';
 import { cn } from '@/lib/utils/cn';
 import { FileText, Pencil, Trash2, ShoppingBag, Check, Sparkles, EyeOff } from 'lucide-react';
@@ -15,7 +16,6 @@ import { useToast } from '@/components/providers/toast-provider';
 
 export interface ProductCardProps {
   product: SerializedProduct;
-  onViewDetails?: (product: SerializedProduct) => void;
   onEdit?: (product: SerializedProduct) => void;
   onDelete?: (product: SerializedProduct) => void;
   className?: string;
@@ -54,7 +54,6 @@ const getProductImage = (product: SerializedProduct): string => {
 
 export const ProductCard: React.FC<ProductCardProps> = ({
   product,
-  onViewDetails,
   onEdit,
   onDelete,
   className,
@@ -66,19 +65,16 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const { success } = useToast();
 
   const isAdminView = Boolean(onEdit || onDelete);
+  const detailHref = `/products/${product.slug}`;
 
-  // Derived stock status metadata
-  const stockInfo = getStockStatusBadgeInfo(
-    product.stockQuantity ?? (product.inStock ? 10 : 0),
-    product.lowStockThreshold ?? 5
-  );
+  // Customer sees In Stock / Out of Stock only. Admin sees full stock info incl. Low Stock.
+  const stockQuantityNum = product.stockQuantity ?? (product.inStock ? 10 : 0);
+  const stockInfo = isAdminView
+    ? getStockStatusBadgeInfo(stockQuantityNum, product.lowStockThreshold ?? 5)
+    : getCustomerStockStatusBadgeInfo(stockQuantityNum);
 
   // Derived discount pricing (does NOT modify DB price)
   const discountCalc = calculateDiscountedPrice(product.price, product.discount ?? 0);
-
-  const handleCardClick = () => {
-    if (onViewDetails) onViewDetails(product);
-  };
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -98,10 +94,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       )}
     >
       <div>
-        {/* Product Image Container */}
-        <div
-          onClick={handleCardClick}
-          className="relative w-full h-44 sm:h-48 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-900 mb-3.5 border border-slate-100 dark:border-slate-800/60 cursor-pointer"
+        {/* Product Image Link */}
+        <Link
+          href={detailHref}
+          className="relative w-full h-44 sm:h-48 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-900 mb-3.5 border border-slate-100 dark:border-slate-800/60 cursor-pointer block"
         >
           <Image
             src={imgSrc}
@@ -113,7 +109,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             onError={() => setImgSrc('/images/products/paracetamol.png')}
           />
 
-          {/* Top Left Badges: Rx, Featured, Inactive */}
+          {/* Top Left Badges: Rx only (no Featured for customers) */}
           <div className="absolute top-2.5 left-2.5 z-10 flex flex-col gap-1 items-start">
             {product.requiresPrescription && (
               <Badge variant="warning" size="sm">
@@ -122,7 +118,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               </Badge>
             )}
 
-            {product.isFeatured && (
+            {isAdminView && product.isFeatured && (
               <span className="inline-flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider bg-amber-500 text-white px-2 py-0.5 rounded-md shadow-xs">
                 <Sparkles className="w-3 h-3 shrink-0" aria-hidden="true" />
                 <span>Featured</span>
@@ -154,6 +150,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
+                    e.preventDefault();
                     onEdit(product);
                   }}
                   className="p-1.5 rounded-lg bg-white/90 dark:bg-slate-900/90 hover:bg-blue-600 hover:text-white text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-800/80 shadow-xs transition-all focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -168,6 +165,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
+                    e.preventDefault();
                     onDelete(product);
                   }}
                   className="p-1.5 rounded-lg bg-white/90 dark:bg-slate-900/90 hover:bg-red-600 hover:text-white text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-800/80 shadow-xs transition-all focus:outline-none focus:ring-2 focus:ring-red-500"
@@ -178,9 +176,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               )}
             </div>
           )}
-        </div>
+        </Link>
 
-        {/* Category Tag & Stock Status Badge Row (Strict Single Line & No Text Wrapping) */}
+        {/* Category Tag & Stock Status Badge Row */}
         <div className="flex items-center justify-between gap-1.5 mb-2">
           <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-purple-700 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/60 px-2 py-0.5 rounded-md border border-purple-200/50 dark:border-purple-800/50 truncate shrink min-w-0">
             {product.category}
@@ -197,16 +195,15 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           </span>
         </div>
 
-        {/* Product Title */}
-        <button
-          type="button"
-          onClick={handleCardClick}
-          className="text-left w-full group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors focus:outline-none focus:underline mt-1"
+        {/* Product Title Link */}
+        <Link
+          href={detailHref}
+          className="text-left w-full group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors focus:outline-none focus:underline mt-1 block"
         >
           <h3 className="text-base font-bold text-slate-900 dark:text-white font-manrope line-clamp-1 leading-snug">
             {product.name}
           </h3>
-        </button>
+        </Link>
 
         {/* Description Snippet */}
         <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 line-clamp-2 leading-relaxed min-h-[2.25rem]">
@@ -234,17 +231,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         </div>
 
         <div className="flex items-center gap-1.5 shrink-0">
-          {onViewDetails && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleCardClick}
-              className="text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 px-2 py-1.5 shrink-0"
-              aria-label={`View details for ${product.name}`}
-            >
-              View
-            </Button>
-          )}
+          <Link
+            href={detailHref}
+            className="inline-flex items-center justify-center text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 px-2 py-1.5 rounded-lg shrink-0 transition-colors"
+            aria-label={`View details for ${product.name}`}
+          >
+            View
+          </Link>
 
           <Button
             variant="primary"

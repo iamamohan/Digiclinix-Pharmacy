@@ -17,7 +17,7 @@ import { Pagination } from './Pagination';
 import { AddProductModal } from './AddProductModal';
 import { EditProductModal } from './EditProductModal';
 import { DeleteProductDialog } from './DeleteProductDialog';
-import { ProductDetailsModal } from './ProductDetailsModal';
+
 import { ProductCardSkeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Button } from '@/components/ui/Button';
@@ -75,7 +75,7 @@ export const ProductsCatalog: React.FC = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<SerializedProduct | null>(null);
   const [deletingProduct, setDeletingProduct] = useState<SerializedProduct | null>(null);
-  const [detailsProduct, setDetailsProduct] = useState<SerializedProduct | null>(null);
+
 
   // Submitting flags for mutation feedback
   const [isSubmittingAdd, setIsSubmittingAdd] = useState(false);
@@ -310,6 +310,11 @@ export const ProductsCatalog: React.FC = () => {
       discount: formData.discount !== undefined ? String(formData.discount) : '0',
       isFeatured: formData.isFeatured ?? false,
       isActive: formData.isActive ?? true,
+      uses: formData.uses || null,
+      warnings: formData.warnings || null,
+      seoTitle: formData.seoTitle || null,
+      seoDescription: formData.seoDescription || null,
+      seoKeywords: formData.seoKeywords || null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -342,22 +347,22 @@ export const ProductsCatalog: React.FC = () => {
       prev.map((p) =>
         p.id === id
           ? {
-              ...p,
-              name: formData.name,
-              category: formData.category,
-              price: String(formData.price),
-              description: formData.description || null,
-              imageUrl: formData.imageUrl || null,
-              imagePublicId: formData.imagePublicId !== undefined ? formData.imagePublicId : p.imagePublicId,
-              inStock: formData.inStock,
-              requiresPrescription: formData.requiresPrescription,
-              stockQuantity: formData.stockQuantity ?? p.stockQuantity,
-              lowStockThreshold: formData.lowStockThreshold ?? p.lowStockThreshold,
-              discount: formData.discount !== undefined ? String(formData.discount) : p.discount,
-              isFeatured: formData.isFeatured ?? p.isFeatured,
-              isActive: formData.isActive ?? p.isActive,
-              updatedAt: new Date(),
-            }
+            ...p,
+            name: formData.name,
+            category: formData.category,
+            price: String(formData.price),
+            description: formData.description || null,
+            imageUrl: formData.imageUrl || null,
+            imagePublicId: formData.imagePublicId !== undefined ? formData.imagePublicId : p.imagePublicId,
+            inStock: formData.inStock,
+            requiresPrescription: formData.requiresPrescription,
+            stockQuantity: formData.stockQuantity ?? p.stockQuantity,
+            lowStockThreshold: formData.lowStockThreshold ?? p.lowStockThreshold,
+            discount: formData.discount !== undefined ? String(formData.discount) : p.discount,
+            isFeatured: formData.isFeatured ?? p.isFeatured,
+            isActive: formData.isActive ?? p.isActive,
+            updatedAt: new Date(),
+          }
           : p
       )
     );
@@ -525,7 +530,6 @@ export const ProductsCatalog: React.FC = () => {
 
           <ProductGrid
             products={paginatedProducts}
-            onViewDetails={(p) => setDetailsProduct(p)}
             onEdit={isAdmin ? (p) => setEditingProduct(p) : undefined}
             onDelete={isAdmin ? (p) => setDeletingProduct(p) : undefined}
           />
@@ -568,16 +572,7 @@ export const ProductsCatalog: React.FC = () => {
         </>
       )}
 
-      {/* Product Details Modal — visible to all */}
-      <ProductDetailsModal
-        isOpen={Boolean(detailsProduct)}
-        product={detailsProduct}
-        onClose={() => setDetailsProduct(null)}
-        onEdit={isAdmin ? (p) => {
-          setDetailsProduct(null);
-          setEditingProduct(p);
-        } : undefined}
-      />
+
     </div>
   );
 };

@@ -76,6 +76,13 @@ export const createProductSchema = z.object({
     .default(0),
   isFeatured: z.boolean().default(false),
   isActive: z.boolean().default(true),
+
+  // Phase 10E Medical & SEO Fields
+  uses: z.string().trim().optional(),
+  warnings: z.string().trim().optional(),
+  seoTitle: z.string().trim().optional(),
+  seoDescription: z.string().trim().optional(),
+  seoKeywords: z.string().trim().optional(),
 });
 
 export const updateProductSchema = createProductSchema.partial();

@@ -24,7 +24,8 @@ export interface StockStatusBadgeInfo {
 }
 
 /**
- * Returns UI badge metadata (label, badge variant, color styling) for a given stock state.
+ * Returns full admin UI badge metadata for inventory management.
+ * Shows OUT_OF_STOCK, LOW_STOCK, or IN_STOCK with count hints.
  */
 export function getStockStatusBadgeInfo(
   stockQuantity: number,
@@ -55,4 +56,27 @@ export function getStockStatusBadgeInfo(
         badgeColorClass: 'bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-400 dark:border-emerald-800/60',
       };
   }
+}
+
+/**
+ * Customer-facing simplified stock badge.
+ * Shows only "In Stock" or "Out of Stock" — never exposes exact quantities,
+ * low-stock threshold, or internal inventory details to customers.
+ */
+export function getCustomerStockStatusBadgeInfo(stockQuantity: number): StockStatusBadgeInfo {
+  if (stockQuantity <= 0) {
+    return {
+      status: 'OUT_OF_STOCK',
+      label: 'Out of Stock',
+      variant: 'danger',
+      badgeColorClass: 'bg-red-50 text-red-600 border-red-200 dark:bg-red-950/60 dark:text-red-400 dark:border-red-800/60',
+    };
+  }
+
+  return {
+    status: 'IN_STOCK',
+    label: 'In Stock',
+    variant: 'success',
+    badgeColorClass: 'bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-400 dark:border-emerald-800/60',
+  };
 }

@@ -41,6 +41,13 @@ model Product {
   isFeatured           Boolean  @default(false)
   isActive             Boolean  @default(true)
 
+  // Phase 10E Medical & SEO Fields
+  uses                 String?
+  warnings             String?
+  seoTitle             String?
+  seoDescription       String?
+  seoKeywords          String?
+
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 

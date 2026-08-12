@@ -2,97 +2,88 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Phone, ShoppingBag, ShieldCheck, Stethoscope } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
+import { ChevronLeft, ChevronRight, Search, ShieldCheck } from 'lucide-react';
+import { CONTACT_CONFIG } from '@/lib/config/contact';
 
-interface SlideBtn {
+interface SlideCta {
   text: string;
   href: string;
-  icon?: React.ReactNode;
   isExternal?: boolean;
 }
 
 interface Slide {
   id: number;
+  eyebrow: string;
   title: string;
   subtitle: string;
-  badge: string;
   image: string;
-  primaryBtn: SlideBtn;
-  secondaryBtn?: SlideBtn;
+  primaryCta: SlideCta;
+  secondaryCta: SlideCta;
 }
 
-const SLIDES: Slide[] = [
+const HERO_SLIDES: Slide[] = [
   {
     id: 1,
-    badge: '24/7 Doorstep Delivery',
-    title: '24/7 Prescription Delivery',
-    subtitle: 'Fast, certified prescription fulfillment and healthcare supplies delivered right to your doorstep.',
-    image: '/images/hero/hero-1.png',
-    primaryBtn: { text: 'Browse Products', href: '/products', icon: <ShoppingBag className="w-4 h-4" aria-hidden="true" /> },
-    secondaryBtn: {
-      text: 'WhatsApp Order',
-      href: 'https://wa.me/919182015238?text=Hello%20Digiclinix%2C%20I%20would%20like%20to%20order%20medicines.%20Please%20assist%20me.',
-      icon: <Phone className="w-4 h-4" aria-hidden="true" />,
-      isExternal: true,
-    },
+    eyebrow: '100% CERTIFIED ONLINE PHARMACY',
+    title: 'Your Trusted Online Pharmacy',
+    subtitle: 'Trusted medicines and healthcare essentials, delivered with care.',
+    image: '/images/hero/hero-slide-1.png',
+    primaryCta: { text: 'Explore Medicines', href: '/products' },
+    secondaryCta: { text: 'Shop Now', href: '/products' },
   },
   {
     id: 2,
-    badge: '100% Authentic Quality',
-    title: '100% Genuine Medicines',
-    subtitle: 'Guaranteed authentic healthcare products directly sourced from certified pharmaceutical manufacturers.',
-    image: '/images/hero/hero-2.png',
-    primaryBtn: { text: 'Explore Catalog', href: '/products', icon: <ShieldCheck className="w-4 h-4" aria-hidden="true" /> },
+    eyebrow: 'FAST & CONVENIENT DELIVERY',
+    title: 'Shop Medicines, Get Them Delivered',
+    subtitle: 'Browse trusted medicines and healthcare essentials, place your order online, and get them delivered conveniently to your doorstep.',
+    image: '/images/hero/hero-slide-2.png',
+    primaryCta: { text: 'Order Medicines', href: '/products' },
+    secondaryCta: { text: 'Track Orders', href: '/account/orders' },
   },
   {
     id: 3,
-    badge: 'Clinical Excellence',
-    title: 'Diagnostics & Lab Services',
-    subtitle: 'Comprehensive clinical diagnostic report fulfillment and healthcare lab testing support.',
-    image: '/images/hero/hero-3.png',
-    primaryBtn: { text: 'Contact Specialist', href: '/contact', icon: <Stethoscope className="w-4 h-4" aria-hidden="true" /> },
-  },
-  {
-    id: 4,
-    badge: 'Expert Medical Guidance',
-    title: 'Healthcare Consultation',
-    subtitle: 'Connect with experienced licensed pharmacists for professional prescription assistance and health guidance.',
-    image: '/images/hero/hero-4.png',
-    primaryBtn: {
-      text: 'WhatsApp Support',
-      href: 'https://wa.me/919182015238?text=Hello%20Digiclinix%2C%20I%20need%20healthcare%20consultation%20support.',
-      icon: <Phone className="w-4 h-4" aria-hidden="true" />,
+    eyebrow: 'NEED HELP WITH YOUR ORDER?',
+    title: "We're Here to Help",
+    subtitle: 'Have questions about medicines, orders, or delivery? Get in touch with our support team through WhatsApp or contact us directly.',
+    image: '/images/hero/sky-blue-hero-3-wide.png',
+    primaryCta: { text: 'Contact Us', href: '/contact' },
+    secondaryCta: {
+      text: 'WhatsApp Us',
+      href: CONTACT_CONFIG.whatsappUrl,
       isExternal: true,
     },
   },
 ];
 
 export const HeroCarousel: React.FC = () => {
+  const router = useRouter();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [category, setCategory] = useState('');
   const touchStartX = useRef<number | null>(null);
 
-  // Accessibility: Reduced motion check
   const shouldReduceMotion = useReducedMotion();
 
   const nextSlide = useCallback(() => {
-    setCurrentIndex((prev) => (prev + 1) % SLIDES.length);
+    setCurrentIndex((prev) => (prev + 1) % HERO_SLIDES.length);
   }, []);
 
   const prevSlide = useCallback(() => {
-    setCurrentIndex((prev) => (prev - 1 + SLIDES.length) % SLIDES.length);
+    setCurrentIndex((prev) => (prev - 1 + HERO_SLIDES.length) % HERO_SLIDES.length);
   }, []);
 
-  // Autoplay timer 5s (Disabled if user prefers reduced motion)
+  // 6-second smooth auto-play
   useEffect(() => {
     if (isPaused || shouldReduceMotion) return;
-    const interval = setInterval(nextSlide, 5000);
+    const interval = setInterval(nextSlide, 6000);
     return () => clearInterval(interval);
   }, [isPaused, shouldReduceMotion, nextSlide]);
 
-  // Touch swipe handlers
+  // Touch gesture handlers for mobile
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
   };
@@ -107,157 +98,185 @@ export const HeroCarousel: React.FC = () => {
     touchStartX.current = null;
   };
 
-  // Keyboard navigation listener
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'ArrowLeft') prevSlide();
-    if (e.key === 'ArrowRight') nextSlide();
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const params = new URLSearchParams();
+    if (searchQuery.trim()) params.set('search', searchQuery.trim());
+    if (category) params.set('category', category);
+    router.push(`/products?${params.toString()}`);
   };
 
-  const currentSlide = SLIDES[currentIndex];
+  const currentSlide = HERO_SLIDES[currentIndex];
 
   return (
     <section
-      aria-label="Hero Carousel"
-      className="relative w-full overflow-hidden bg-[#EBF3FF] dark:bg-slate-950 py-12 md:py-16 transition-colors duration-200"
+      aria-label="Digiclinix Pharmacy Hero Carousel"
+      className="relative w-full overflow-hidden bg-[#D1EFF1] dark:bg-slate-950 min-h-[520px] sm:min-h-[560px] md:min-h-[600px] lg:min-h-[640px] flex items-center justify-center py-12 sm:py-16 transition-colors duration-200 select-none"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
       onFocus={() => setIsPaused(true)}
       onBlur={() => setIsPaused(false)}
-      onKeyDown={handleKeyDown}
       tabIndex={0}
     >
-      {/* Decorative ambient background glows using matching soft blue/indigo tones */}
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#DCE7FE]/60 dark:bg-purple-600/15 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-[#D4E3FF]/50 dark:bg-blue-600/15 rounded-full blur-3xl pointer-events-none" />
+      {/* 100% Crisp Visible Background Image Layer for all 3 Slides */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={currentSlide.id}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: shouldReduceMotion ? 0 : 0.4, ease: 'easeInOut' }}
+          className="absolute inset-0 z-0 pointer-events-none"
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+        >
+          <Image
+            src={currentSlide.image}
+            alt={currentSlide.title}
+            fill
+            priority={currentIndex === 0}
+            sizes="100vw"
+            className="object-cover object-center w-full h-full opacity-100"
+          />
+        </motion.div>
+      </AnimatePresence>
 
-      {/* Live Region for Screen Readers */}
-      <div className="sr-only" aria-live="polite">
-        Slide {currentIndex + 1} of {SLIDES.length}: {currentSlide.title}
-      </div>
+      {/* Main Hero Content Area (Centered & Protected Zone matching Reference Typography) */}
+      <div className="relative z-20 max-w-4xl mx-auto px-4 sm:px-6 text-center w-full my-auto">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentSlide.id}
+            initial={shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: -8 }}
+            transition={{ duration: shouldReduceMotion ? 0 : 0.3, ease: 'easeOut' }}
+            className="space-y-4 sm:space-y-6"
+          >
+            {/* Category / Eyebrow Badge */}
+            <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-white/85 dark:bg-slate-900/80 backdrop-blur-xs text-purple-700 dark:text-purple-300 text-[11px] sm:text-xs font-extrabold tracking-wider border border-purple-200/70 dark:border-purple-800/60 shadow-xs">
+              <ShieldCheck className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400 shrink-0" />
+              <span>{currentSlide.eyebrow}</span>
+            </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Bounded Hero Card Container */}
-        <div className="relative w-full overflow-hidden rounded-3xl min-h-[500px] md:min-h-[560px] flex items-center px-6 sm:px-12 py-10 shadow-xl border border-[#DCE7FE] dark:border-purple-500/20 bg-white dark:bg-slate-900">
-          {/* Background Image Carousel with Framer Motion Fade */}
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentSlide.id}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: shouldReduceMotion ? 0 : 0.5, ease: 'easeOut' }}
-              className="absolute inset-0 z-0"
-              onTouchStart={handleTouchStart}
-              onTouchEnd={handleTouchEnd}
-            >
-              {/* Light/Dark gradient overlay: solid white behind left text, 100% clear on right image */}
-              <div className="absolute inset-0 bg-gradient-to-r from-white via-white/85 via-45% to-transparent dark:from-slate-950 dark:via-slate-950/85 dark:via-45% dark:to-transparent z-10" />
+            {/* Hero Title — Dark Slate Charcoal font matching provided reference screenshot */}
+            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold text-[#213242] dark:text-white font-manrope leading-[1.08] tracking-tight max-w-[850px] mx-auto drop-shadow-xs">
+              {currentSlide.title}
+            </h1>
 
-              <Image
-                src={currentSlide.image}
-                alt={currentSlide.title}
-                fill
-                priority={currentIndex === 0}
-                fetchPriority={currentIndex === 0 ? 'high' : 'auto'}
-                loading={currentIndex === 0 ? 'eager' : 'lazy'}
-                sizes="(max-width: 1280px) 100vw, 1280px"
-                className="object-cover object-center scale-105"
-              />
-            </motion.div>
-          </AnimatePresence>
+            {/* Supporting Subtitle */}
+            <p className="text-sm sm:text-base md:text-lg text-slate-700 dark:text-slate-200 leading-relaxed font-medium max-w-[680px] mx-auto">
+              {currentSlide.subtitle}
+            </p>
 
-          {/* Slide Content Overlay */}
-          <div className="relative z-20 max-w-2xl text-slate-900 dark:text-white">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={currentSlide.id}
-                initial={shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: -16 }}
-                transition={{ duration: shouldReduceMotion ? 0 : 0.5, ease: 'easeOut' }}
-                className="space-y-6"
+            {/* Unified Search Input Component */}
+            <form onSubmit={handleSearchSubmit} className="w-full max-w-xl mx-auto pt-1 sm:pt-2">
+              <div className="flex items-center rounded-full bg-white shadow-xl p-1.5 border border-slate-100/90 transition-all focus-within:ring-2 focus-within:ring-[#213242]">
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="bg-transparent text-xs sm:text-sm font-semibold text-slate-700 focus:outline-none cursor-pointer pl-4 pr-1 py-2 rounded-l-full hover:text-slate-900 shrink-0"
+                  aria-label="Filter by Category"
+                >
+                  <option value="">All category</option>
+                  <option value="Pain Relief">Pain Relief</option>
+                  <option value="Antibiotics">Antibiotics</option>
+                  <option value="Vitamins & Supplements">Vitamins &amp; Supplements</option>
+                  <option value="Digestive Health">Digestive Health</option>
+                  <option value="Allergy Relief">Allergy Relief</option>
+                  <option value="Diabetes Care">Diabetes Care</option>
+                </select>
+
+                <div className="w-[1px] h-6 bg-slate-200 shrink-0" aria-hidden="true" />
+
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search for something fun..."
+                  className="w-full px-4 py-2 text-xs sm:text-sm text-slate-800 placeholder:text-slate-400 bg-transparent focus:outline-none font-medium"
+                  aria-label="Search medicines"
+                />
+
+                <button
+                  type="submit"
+                  className="p-2.5 rounded-full text-slate-500 hover:text-[#213242] transition-colors focus:outline-none shrink-0 mr-1"
+                  aria-label="Submit Search"
+                >
+                  <Search className="w-4 h-4 sm:w-5 sm:h-5" />
+                </button>
+              </div>
+            </form>
+
+            {/* Primary & Secondary Action Pill Buttons */}
+            <div className="flex items-center justify-center gap-3 sm:gap-4 flex-wrap pt-1">
+              <Link
+                href={currentSlide.primaryCta.href}
+                className="px-7 py-3 rounded-full bg-[#233544] hover:bg-[#182733] text-white text-xs sm:text-sm font-bold shadow-md transition-all duration-200 transform hover:-translate-y-0.5"
               >
-                {/* Pill Badge */}
-                <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-purple-100/90 dark:bg-slate-950/80 backdrop-blur-md text-purple-700 dark:text-purple-200 text-xs font-bold tracking-wide border border-purple-200 dark:border-purple-500/40 shadow-sm">
-                  <span className="w-2 h-2 rounded-full bg-purple-600 dark:bg-purple-400 animate-pulse shrink-0" aria-hidden="true" />
-                  <span>{currentSlide.badge}</span>
-                </div>
+                {currentSlide.primaryCta.text}
+              </Link>
 
-                {/* Title */}
-                <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-tight font-manrope">
-                  {currentSlide.title}
-                </h1>
-
-                {/* Subtitle */}
-                <p className="text-base sm:text-lg text-slate-600 dark:text-slate-300 leading-relaxed font-normal">
-                  {currentSlide.subtitle}
-                </p>
-
-                {/* Action Buttons */}
-                <div className="pt-2 flex flex-wrap items-center gap-4">
-                  <Button
-                    href={currentSlide.primaryBtn.href}
-                    variant="primary"
-                    size="lg"
-                    leftIcon={currentSlide.primaryBtn.icon}
-                    target={currentSlide.primaryBtn.isExternal ? '_blank' : undefined}
-                    rel={currentSlide.primaryBtn.isExternal ? 'noopener noreferrer' : undefined}
-                  >
-                    {currentSlide.primaryBtn.text}
-                  </Button>
-
-                  {currentSlide.secondaryBtn && (
-                    <Button
-                      href={currentSlide.secondaryBtn.href}
-                      variant="outline"
-                      size="lg"
-                      leftIcon={currentSlide.secondaryBtn.icon}
-                      className="border-slate-300 dark:border-white/30 text-slate-800 dark:text-white hover:bg-slate-100 dark:hover:bg-white/10"
-                      target={currentSlide.secondaryBtn.isExternal ? '_blank' : undefined}
-                      rel={currentSlide.secondaryBtn.isExternal ? 'noopener noreferrer' : undefined}
-                    >
-                      {currentSlide.secondaryBtn.text}
-                    </Button>
-                  )}
-                </div>
-              </motion.div>
-            </AnimatePresence>
-          </div>
-        </div>
+              {currentSlide.secondaryCta.isExternal ? (
+                <a
+                  href={currentSlide.secondaryCta.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-7 py-3 rounded-full bg-white hover:bg-slate-50 text-[#213242] text-xs sm:text-sm font-bold border border-slate-200/90 shadow-md transition-all duration-200 transform hover:-translate-y-0.5"
+                >
+                  {currentSlide.secondaryCta.text}
+                </a>
+              ) : (
+                <Link
+                  href={currentSlide.secondaryCta.href}
+                  className="px-7 py-3 rounded-full bg-white hover:bg-slate-50 text-[#213242] text-xs sm:text-sm font-bold border border-slate-200/90 shadow-md transition-all duration-200 transform hover:-translate-y-0.5"
+                >
+                  {currentSlide.secondaryCta.text}
+                </Link>
+              )}
+            </div>
+          </motion.div>
+        </AnimatePresence>
       </div>
 
-      {/* Navigation Controls: Arrows (Hidden on mobile responsive screens to prevent text overlap) */}
+      {/* Left Navigation Arrow Control (Hidden on mobile, visible on medium+ screens) */}
       <button
+        type="button"
         onClick={prevSlide}
-        className="hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 z-30 p-3 rounded-full bg-white/90 dark:bg-slate-900/60 hover:bg-white dark:hover:bg-slate-900 border border-slate-200 dark:border-white/20 text-slate-700 dark:text-white shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-purple-500"
+        className="hidden md:flex absolute left-3 sm:left-6 lg:left-8 top-1/2 -translate-y-1/2 z-30 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/10 hover:bg-black/25 text-slate-800 dark:text-white items-center justify-center transition-all backdrop-blur-xs focus:outline-none"
         aria-label="Previous Slide"
       >
-        <ChevronLeft className="w-6 h-6" aria-hidden="true" />
+        <ChevronLeft className="w-5 h-5" />
       </button>
 
+      {/* Right Navigation Arrow Control (Hidden on mobile, visible on medium+ screens) */}
       <button
+        type="button"
         onClick={nextSlide}
-        className="hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 z-30 p-3 rounded-full bg-white/90 dark:bg-slate-900/60 hover:bg-white dark:hover:bg-slate-900 border border-slate-200 dark:border-white/20 text-slate-700 dark:text-white shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-purple-500"
+        className="hidden md:flex absolute right-3 sm:right-6 lg:left-auto lg:right-8 top-1/2 -translate-y-1/2 z-30 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/10 hover:bg-black/25 text-slate-800 dark:text-white items-center justify-center transition-all backdrop-blur-xs focus:outline-none"
         aria-label="Next Slide"
       >
-        <ChevronRight className="w-6 h-6" aria-hidden="true" />
+        <ChevronRight className="w-5 h-5" />
       </button>
 
-      {/* Pagination Dots */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2.5">
-        {SLIDES.map((slide, index) => (
+      {/* Pagination 3-Dot Indicators (. o .) */}
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 flex items-center gap-3">
+        {HERO_SLIDES.map((slide, index) => (
           <button
             key={slide.id}
+            type="button"
             onClick={() => setCurrentIndex(index)}
-            className={`transition-all rounded-full focus:outline-none focus:ring-2 focus:ring-purple-500 ${index === currentIndex
-                ? 'w-8 h-2.5 bg-purple-600 dark:bg-purple-500'
-                : 'w-2.5 h-2.5 bg-slate-300 dark:bg-white/40 hover:bg-slate-400 dark:hover:bg-white/70'
-              }`}
+            className={`transition-all rounded-full focus:outline-none ${
+              index === currentIndex
+                ? 'w-3 h-3 bg-transparent border-2 border-[#213242] dark:border-white scale-110'
+                : 'w-2 h-2 bg-[#213242]/50 dark:bg-white/50 hover:bg-[#213242]'
+            }`}
             aria-label={`Go to slide ${index + 1}`}
-            aria-current={index === currentIndex ? 'true' : 'false'}
           />
         ))}
       </div>
+
+      {/* Subtle Bottom Transition to Main Body */}
+      <div className="absolute bottom-0 left-0 right-0 h-10 sm:h-12 bg-gradient-to-t from-white/60 to-transparent dark:from-[#0B1220]/60 dark:to-transparent pointer-events-none z-10" />
     </section>
   );
 };

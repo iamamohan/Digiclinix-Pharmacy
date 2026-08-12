@@ -4,14 +4,12 @@ import { ProductCard } from '@/components/ui/ProductCard';
 
 export interface ProductGridProps {
   products: SerializedProduct[];
-  onViewDetails?: (product: SerializedProduct) => void;
   onEdit?: (product: SerializedProduct) => void;
   onDelete?: (product: SerializedProduct) => void;
 }
 
 export const ProductGrid: React.FC<ProductGridProps> = ({
   products,
-  onViewDetails,
   onEdit,
   onDelete,
 }) => {
@@ -21,7 +19,6 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
         <ProductCard
           key={product.id}
           product={product}
-          onViewDetails={onViewDetails}
           onEdit={onEdit}
           onDelete={onDelete}
         />

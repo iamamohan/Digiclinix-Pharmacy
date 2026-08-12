@@ -8,5 +8,5 @@ export interface AuthSessionProviderProps {
 }
 
 export const AuthSessionProvider: React.FC<AuthSessionProviderProps> = ({ children }) => {
-  return <SessionProvider>{children}</SessionProvider>;
+  return <SessionProvider basePath="/api/auth">{children}</SessionProvider>;
 };

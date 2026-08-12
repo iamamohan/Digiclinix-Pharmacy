@@ -29,6 +29,11 @@ const FALLBACK_PRODUCTS = [
     discount: '0',
     isFeatured: false,
     isActive: true,
+    uses: 'Temporary relief of headaches, muscle aches, fever, and minor arthritis pain.',
+    warnings: 'Do not exceed recommended dose. Liver warning if taken with other paracetamol products.',
+    seoTitle: 'Paracetamol 500mg Tablets | Digiclinix Pharmacy',
+    seoDescription: 'Buy Paracetamol 500mg Tablets online at Digiclinix Pharmacy for fast pain relief.',
+    seoKeywords: 'paracetamol, pain relief, fever reducer',
     createdAt: new Date(),
     updatedAt: new Date(),
   },
@@ -48,6 +53,11 @@ const FALLBACK_PRODUCTS = [
     discount: '0',
     isFeatured: false,
     isActive: true,
+    uses: null,
+    warnings: null,
+    seoTitle: null,
+    seoDescription: null,
+    seoKeywords: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   },
@@ -67,6 +77,11 @@ const FALLBACK_PRODUCTS = [
     discount: '0',
     isFeatured: false,
     isActive: true,
+    uses: null,
+    warnings: null,
+    seoTitle: null,
+    seoDescription: null,
+    seoKeywords: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   },
@@ -86,26 +101,32 @@ const FALLBACK_PRODUCTS = [
     discount: '0',
     isFeatured: false,
     isActive: true,
+    uses: null,
+    warnings: null,
+    seoTitle: null,
+    seoDescription: null,
+    seoKeywords: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   },
 ];
 
 export const productService = {
-  async list(params: GetProductsQueryInput) {
+  async list(params?: Partial<GetProductsQueryInput>) {
+    const pageNum = Number(params?.page) || 1;
+    const pageSizeNum = Number(params?.pageSize) || 20;
+    const sortBy = params?.sortBy || 'createdAt';
+    const sortOrder = params?.sortOrder || 'desc';
     const {
-      page,
-      pageSize,
       search,
       category,
       inStock,
       requiresPrescription,
       isFeatured,
       isActive,
-      sortBy,
-      sortOrder,
-    } = params;
-    const skip = (page - 1) * pageSize;
+    } = params || {};
+
+    const skip = (pageNum - 1) * pageSizeNum;
 
     const where: Prisma.ProductWhereInput = {};
 
@@ -128,7 +149,7 @@ export const productService = {
         prisma.product.findMany({
           where,
           skip,
-          take: pageSize,
+          take: pageSizeNum,
           orderBy: { [sortBy]: sortOrder },
         }),
       ]);
@@ -138,16 +159,16 @@ export const productService = {
       return {
         products,
         totalItems,
-        page,
-        pageSize,
+        page: pageNum,
+        pageSize: pageSizeNum,
       };
     } catch (dbError) {
       console.warn('[ProductService] Database query failed or initializing, returning fallback catalog:', dbError);
       return {
-        products: FALLBACK_PRODUCTS.slice(0, pageSize),
+        products: FALLBACK_PRODUCTS.slice(0, pageSizeNum),
         totalItems: FALLBACK_PRODUCTS.length,
         page: 1,
-        pageSize,
+        pageSize: pageSizeNum,
       };
     }
   },

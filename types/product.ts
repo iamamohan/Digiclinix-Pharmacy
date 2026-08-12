@@ -19,4 +19,11 @@ export interface ProductFormData {
   discount?: number | string;
   isFeatured?: boolean;
   isActive?: boolean;
+
+  // Phase 10E Fields
+  uses?: string;
+  warnings?: string;
+  seoTitle?: string;
+  seoDescription?: string;
+  seoKeywords?: string;
 }

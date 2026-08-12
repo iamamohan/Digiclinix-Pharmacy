@@ -298,6 +298,11 @@ export default function AdminProductsPage() {
                 discount: Number(editingProduct.discount),
                 isFeatured: editingProduct.isFeatured,
                 isActive: editingProduct.isActive,
+                uses: editingProduct.uses || undefined,
+                warnings: editingProduct.warnings || undefined,
+                seoTitle: editingProduct.seoTitle || undefined,
+                seoDescription: editingProduct.seoDescription || undefined,
+                seoKeywords: editingProduct.seoKeywords || undefined,
               }}
               onSubmit={handleUpdate}
               isSubmitting={isSubmitting}
